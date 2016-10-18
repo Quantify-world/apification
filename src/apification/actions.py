@@ -1,0 +1,2 @@
+class Action(object):
+    pass

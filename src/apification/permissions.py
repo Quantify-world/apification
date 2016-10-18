@@ -1,0 +1,2 @@
+class BasePermission(object):
+    pass

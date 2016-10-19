@@ -1,10 +1,11 @@
-
+from apification.resources import DjangoResource
+from apification.actions  import Action
 
 class ListAnswers(DjangoResource):
     writer = AnswerWriter
     
     class List(Action):
-
+        pass
 
 class QuestionResource(DjangoResource):
     writer = QuestionWriter

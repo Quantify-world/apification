@@ -2,12 +2,13 @@ from apification.actions import Action
 
 
 class ResourceMetaclass(type):
-    def __new__(cls, *args, **kwargs):
-        for attr_name in dir(cls):
-            attr = getattr(cls, attr_name)
-            if isinstance(attr, (Action, Resource)):
-                attr.resource = cls
-        return int.__new__(cls, *args, **kwargs)
+    def __new__(cls, name, parents, dct):
+        ret = super(ResourceMetaclass, cls).__new__(cls, name, parents, dct)
+        for attrib in dir(ret):
+            if not (attrib.startswith('__') or attrib.endswith('__')) and \
+                    Action in getattr(getattr(ret, attrib, object), '__bases__',[]):
+                setattr(getattr(ret, attrib), 'resource', ret)
+        return ret
 
     @property
     def urls(cls):

@@ -23,3 +23,13 @@ class ApiNodeMetaclass(type):
 class ApiNode(object):
     __metaclass__ = ApiNodeMetaclass
     parent = None
+
+    def __init__(self, request, *args, **kwargs):
+        for attrib_name in dir(self):
+            attrib = getattr(self, attrib_name)
+            if (not attrib_name.startswith('_') and
+                    not attrib_name is 'parent' and # skip parent to prevent endless recursion
+                    type(attrib) is ApiNodeMetaclass and issubclass(attrib, ApiNode)):
+                instance = attrib(request, *args, **kwargs) # create child instance
+                setattr(self, attrib_name, instance)        # attach child instance
+                getattr(self, attrib_name).parent = self    # switch child's parent link from class to instance

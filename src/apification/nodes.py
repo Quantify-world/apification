@@ -3,7 +3,8 @@ class ApiNodeMetaclass(type):
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
         for attr_name in dir(ret):
             node = getattr(ret, attr_name)
-            if issubclass(node, ApiNode):
+            if (type(node) is cls and not attr_name.startswith('_') and
+                    issubclass(node, ApiNode)):
                 setattr(node, 'parent', ret)
         return ret
 

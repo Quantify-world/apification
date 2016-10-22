@@ -1,28 +1,27 @@
-from apification.actions import Action
+from apification.nodes import ApiNode
 
 
-class ResourceMetaclass(type):
-    def __new__(cls, name, parents, dct):
-        ret = super(ResourceMetaclass, cls).__new__(cls, name, parents, dct)
-        for attrib in dir(ret):
-            if not (attrib.startswith('__') or attrib.endswith('__')) and \
-                    Action in getattr(getattr(ret, attrib, object), '__bases__',[]):
-                setattr(getattr(ret, attrib), 'resource', ret)
-        return ret
+class Resource(ApiNode):
+    name = None
 
-    @property
-    def urls(cls):
-        urls = []
-        for attr_name in dir(cls):
-            attr = getattr(cls, attr_name)
-            if isinstance(attr, Action):
-                urls.append(attr.get_url_entry())
-        return urls
+    @classmethod
+    def get_path(cls):
+        return r'(?P<pk>\d+)/'
 
-
-class Resource(object):
-    __metaclass__ = ResourceMetaclass
+    @classmethod
+    def get_view(cls, action):
+        action_class = getattr(cls, action)
+        def view(request, *args, **kwargs):
+            action = action_class(request, args=args, kwargs=kwargs)
+            return action.run()
+        return view
 
 
 class DjangoResource(Resource):
-    pass
+    def get_queryset(self):
+        if self.parent is None:
+            raise NotImplementedError()
+        return self.parent.get_queryset()
+
+    def get_object(self):
+        return self.get_queryset().get(pk=self.kwargs['pk'])

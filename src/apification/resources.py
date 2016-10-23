@@ -1,20 +1,12 @@
-from apification.nodes import ApiNode
+from apification.nodes import ApiBranch
 
 
-class Resource(ApiNode):
+class Resource(ApiBranch):
     name = None
 
     @classmethod
     def get_path(cls):
         return r'(?P<pk>\d+)/'
-
-    @classmethod
-    def get_view(cls, action):
-        action_class = getattr(cls, action)
-        def view(request, *args, **kwargs):
-            action = action_class(request, args=args, kwargs=kwargs)
-            return action.run()
-        return view
 
 
 class DjangoResource(Resource):

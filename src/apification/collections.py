@@ -1,7 +1,7 @@
-from apification.nodes import ApiNode
+from apification.nodes import ApiBranch
 
 
-class Collection(ApiNode):
+class Collection(ApiBranch):
     @classmethod
     def get_path(cls):
         return cls.name + '/'

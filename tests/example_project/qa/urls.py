@@ -1,7 +1,7 @@
 from django.conf.urls import url, include
 
-from qa.api import QuestionResource
+from qa.api import QuestionCollection
 
 urlpatterns = [
-    url('', include(QuestionResource.urls)),
+#    url('', include(QuestionCollection.urls)),
 ]

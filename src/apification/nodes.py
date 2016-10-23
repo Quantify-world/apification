@@ -19,18 +19,15 @@ class ApiNode(object):
     __metaclass__ = ApiNodeMetaclass
     parent = None  # in class will point to parent class, in instance will lazy-point to parent instance
     name = None
+    serializer_class = None
+    deserializer_class = None
 
     def __init__(self, request, args, kwargs):
         self.args = args
         self.kwargs = kwargs
         self.request = request
-        # lazy instantiating of parent
-        def fget_parent(self):
-            if not hasattr(self, '_parent_instance'):
-                self._parent_instance = self.__class__.parent(request, args=args, kwargs=kwargs)
-            return self._parent_instance
-
-        self.parent = property(fget_parent)
+        if self.parent:
+            self.parent = self.__class__.parent(request, args=args, kwargs=kwargs)
 
     @classmethod
     def iter_children(cls, filter_class=None):
@@ -86,6 +83,8 @@ class ApiBranch(ApiNode):
         path += cls.get_path()
         return path
 
+    def get_object(self):
+        raise NotImplementedError()
 
 class ApiLeaf(ApiNode):
     pass

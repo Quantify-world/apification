@@ -9,6 +9,10 @@ class Resource(ApiBranch):
     @classmethod
     def get_path(cls):
         return r'(?P<%s>\d+)/' % cls.get_url_argument_name()
+    
+    def get_object(self):
+        raise NotImplementedError()
+        
         
 
 class DjangoResource(Resource):

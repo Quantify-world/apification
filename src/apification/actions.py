@@ -6,8 +6,6 @@ from apification.nodes import ApiLeaf
 
 class Action(ApiLeaf):
     method = 'GET'  # default http method
-    parent = None
-    name = None
 
     @classmethod
     def get_name(cls):
@@ -20,11 +18,10 @@ class Action(ApiLeaf):
         else:
             return cls.method, '%s/' % cls.get_name()
 
-    @property
-    def urls(cls):
-
+    @classmethod
+    def get_urls(cls):
         method, action_name = cls.get_method_and_name()
-        path = r'%s%s$' % (cls.parent.get_path(), action_name)
+        path = r'%s%s$' % (cls.parent.construct_path(), action_name)
         
         return [url(path, cls.parent.view, name='%s-%s' % (cls.parent.name, cls.get_name()))]
 

@@ -45,7 +45,10 @@ class QuestionCollection(DjangoCollection):
     
         class Get(Action):
             method = 'GET'
-    
+            def run(self):
+                from django import http
+                return http.HttpResponse(unicode((self.args, self.kwargs)))
+
         class Ping(Action):  # example action
             method = 'POST'
     

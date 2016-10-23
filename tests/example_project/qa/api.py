@@ -9,8 +9,10 @@ from qa.models import Question
 
 class AnswerWriter(Writer):
     pass
+
 class QuestionWriter(Writer):
     pass
+
 class LikeQuestionReader(Reader):
     pass
 
@@ -37,7 +39,7 @@ class QuestionCollection(DjangoCollection):
         method = 'DELETE'
 
     class Item(DjangoResource):
-        writer = QuestionWriter
+        serializer_class = QuestionWriter
         name = 'question'
 
         def get_queryset(self, request):
@@ -45,9 +47,6 @@ class QuestionCollection(DjangoCollection):
     
         class Get(Action):
             method = 'GET'
-            def run(self):
-                from django import http
-                return http.HttpResponse(unicode((self.args, self.kwargs)))
 
         class Ping(Action):  # example action
             method = 'POST'
@@ -82,3 +81,24 @@ class QuestionCollection(DjangoCollection):
 # POST /questions/ {title:qwe, text: asd}
 # <<<
 # {id: 1, title: qwe, text:asd, created: 2000-02-01}
+
+
+class Ping(object):
+    __slots__ = ('value', 'text')
+
+    def __init__(self, value, text):
+        self.value = value
+        self.text = text
+
+    def __unicode__(self):
+        return '%s: %s' % (self.value, self.text)
+
+
+class PingSerializer(Serializer):
+    def from_object(self, obj):
+        return {'value': obj.value, 'text': obj.text}
+
+
+class PingDeserializer(Deserializer):
+    def from_parser(self, data):
+        return Ping(data['value'], data['text'])

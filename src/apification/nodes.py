@@ -53,7 +53,7 @@ class ApiBranch(ApiNode):
         raise NotImplementedError()
 
     @classmethod
-    def view(cls, request, *args, **kwargs):
+    def entrypoint(cls, request, *args, **kwargs):
         # select proper action by http method
         for action_class in cls.iter_actions():
             if action_class.method == request.method:

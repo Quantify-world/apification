@@ -22,8 +22,16 @@ class Action(ApiLeaf):
     def get_urls(cls):
         method, action_name = cls.get_method_and_name()
         path = r'%s%s$' % (cls.parent.construct_path(), action_name)
-        
-        return [url(path, cls.parent.view, name='%s-%s' % (cls.parent.name, cls.get_name()))]
+
+        return [url(path, cls.parent.entrypoint, name='%s-%s' % (cls.parent.name, cls.get_name()))]
 
     def run(self):
-        pass
+        obj = self.get_deserializer().run()
+        ret = self.process(obj)
+        return self.get_serializer(ret).run()
+        
+    def process(self, obj):
+        return obj
+
+    def get_serializer(self):
+        return self.serializer_class(action=self)

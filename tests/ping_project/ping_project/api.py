@@ -21,22 +21,29 @@ class HostCollectionSerializer(Serializer):
             data_list.append(d)
         return {'results': data_list} 
 
+
 class PingSerializer(Serializer):
     pass
 
+
 class PingDeserializer(Deserializer):
     pass
+
 
 class HostCollection(Collection):
     name = 'hosts'
     class Get(Action):
         serializer_class = HostCollectionSerializer
-        
+
     class Host(Resource):
-        serializer_class = HostSerializer
+        default_serializer = 'some_parent_serializer'
+        alternative_serializer = HostSerializer2
+
         class Get(Action):
-            pass
-            
+            method = 'PUT'
+            deserializer = HostSerializer
+            serializer = 'alternative_serializer'
+
         class Ping(PayloadAction):
             pass
         

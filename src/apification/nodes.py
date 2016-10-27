@@ -5,7 +5,7 @@ class ApiNodeMetaclass(type):
     def __new__(cls, name, parents, dct):
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
         for node_name, node in ret.iter_children():
-            node.parent = ret
+            node.parent_class = ret
             if not node.name:
                 node.name = node_name.lower()
         return ret
@@ -17,7 +17,7 @@ class ApiNodeMetaclass(type):
 
 class ApiNode(object):
     __metaclass__ = ApiNodeMetaclass
-    parent = None  # in class will point to parent class, in instance will lazy-point to parent instance
+    parent_class = None  # in class will point to parent class, in instance will lazy-point to parent instance
     name = None
     serializer_class = None
     deserializer_class = None
@@ -26,8 +26,14 @@ class ApiNode(object):
         self.args = args
         self.kwargs = kwargs
         self.request = request
-        if self.parent:
-            self.parent = self.__class__.parent(request, args=args, kwargs=kwargs)
+
+    @property
+    def parent(self):
+        if self.parent_class is None:
+            return None
+        if not hasattr(self, '_parent'):
+            self._parent = self.parent_class(self.request, args=self.args, kwargs=self.kwargs)
+        return self._parent
 
     @classmethod
     def iter_children(cls, filter_class=None):
@@ -78,8 +84,8 @@ class ApiBranch(ApiNode):
     @classmethod
     def construct_path(cls):
         path = ''
-        if cls.parent:
-            path += cls.parent.construct_path()
+        if cls.parent_class:
+            path += cls.parent_class.construct_path()
         path += cls.get_path()
         return path
 

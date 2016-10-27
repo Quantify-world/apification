@@ -7,6 +7,8 @@ from apification.nodes import ApiLeaf
 
 class Action(ApiLeaf):
     method = 'GET'  # default http method
+    serializer = 'default_serializer'
+    deserializer = 'default_deserializer'
 
     @classmethod
     def get_name(cls):
@@ -31,8 +33,7 @@ class Action(ApiLeaf):
         obj = self.parent.get_object()
         ret = self.process(obj)
         return self.get_serializer(ret).run()
-        
-        
+
     def process(self, obj):
         return obj
 
@@ -40,16 +41,16 @@ class Action(ApiLeaf):
         node = self
         while not node.serializer_class:
             node = node.parent
-        
+
         if node.serializer_class:    
             return node.serializer_class(action=self, obj=obj)
         else:
             raise ImproperlyConfigured("serializer_class set nowhere from %s to %s" % (self, node))
-    
-    
-        
-        
+
+
 class PayloadAction(Action):
+    method = 'POST'
+
     def get_deserializer(self):
         node = self
         while not node.deserializer_class:

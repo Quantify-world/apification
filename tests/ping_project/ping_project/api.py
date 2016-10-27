@@ -27,25 +27,29 @@ class PingSerializer(Serializer):
 
 
 class PingDeserializer(Deserializer):
-    pass
+    counter = IntField
 
 
-class HostCollection(Collection):
-    name = 'hosts'
+
+class Hosts(Collection):
+    #name = 'hosts'  #  set automaticaly from class name
+    someHCSerializer = HostCollectionSerializer
+    some_refer_string = PingSerializer 
     class Get(Action):
-        serializer_class = HostCollectionSerializer
-
-    class Host(Resource):
-        default_serializer = 'some_parent_serializer'
-        alternative_serializer = HostSerializer2
-
+        serializer = 'someHCSerializer'
+         
+    class Item(Resource):
+        #default_serializer = HostSerializer
+        default_serializer = 'some_refer_string'
+        alternative_serializer = 'someHCSerializer'
+    
         class Get(Action):
             method = 'PUT'
-            deserializer = HostSerializer
-            serializer = 'alternative_serializer'
-
+    
         class Ping(PayloadAction):
-            pass
+            def process(obj):
+                #HERE call Host.ping
+                pass
         
         def get_object(self):
             pk = int(self.kwargs['host_pk'])

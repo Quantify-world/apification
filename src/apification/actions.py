@@ -22,6 +22,15 @@ class Action(ApiLeaf):
             return cls.method, '%s/' % cls.get_name()
 
     @classmethod
+    def prepare_serializers(cls):
+        from apification.serializers import Serializer
+
+        if isinstance(cls.serializer, type) and issubclass(cls.serializer, Serializer):
+            cls.serializer.node = cls  # set serializer context
+        else:  # string
+            cls._serializers_preparations = [(cls.serializer, {cls: 'serializer'})]
+
+    @classmethod
     def get_urls(cls):
         method, action_name = cls.get_method_and_name()
         path = r'%s%s$' % (cls.parent.construct_path(), action_name)
@@ -37,29 +46,29 @@ class Action(ApiLeaf):
     def process(self, obj):
         return obj
 
-    def get_serializer(self, obj):
-        node = self
-        while not node.serializer_class:
-            node = node.parent
+    # def get_serializer(self, obj):
+    #     self.serializer
+    #     pass
+    
+    def get_deserializer(self):
+        pass
+    
 
-        if node.serializer_class:    
-            return node.serializer_class(action=self, obj=obj)
-        else:
-            raise ImproperlyConfigured("serializer_class set nowhere from %s to %s" % (self, node))
+    
 
 
 class PayloadAction(Action):
     method = 'POST'
 
-    def get_deserializer(self):
-        node = self
-        while not node.deserializer_class:
-            node = node.parent
-        
-        if node.deserializer_class:    
-            return node.deserializer_class(action=self)
-        else:
-            raise ImproperlyConfigured("deserializer_class set nowhere from %s to %s" % (self, node))
+    # def get_deserializer(self):
+    #     node = self
+    #     while not node.deserializer_class:
+    #         node = node.parent
+    #     
+    #     if node.deserializer_class:    
+    #         return node.deserializer_class(action=self)
+    #     else:
+    #         raise ImproperlyConfigured("deserializer_class set nowhere from %s to %s" % (self, node))
         
     def run(self):
         obj = self.get_deserializer().run()

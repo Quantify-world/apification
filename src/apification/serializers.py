@@ -1,9 +1,15 @@
 from django.http import HttpResponse
 
+class SerializerMetaclass(type):
+    def __new__(cls, name, parents, dct):
+        ret = super(SerializerMetaclass, cls).__new__(cls, name, parents, dct)
+        return ret
+
 class Serializer(object):
-    def __init__(self, action, obj):
+    def __init__(self, node, action, obj):
         self.action = action
         self.obj = obj
+        self.node = node
         
     def run(self):
         renderer = self.get_renderer()

@@ -1,6 +1,7 @@
 class Deserializer(object):
-    def __init__(self, action):
+    def __init__(self, node, action):
         self.action = action
+        self.node = node
     
     def run(self):
         parser = self.get_parser()

@@ -27,7 +27,7 @@ class PingSerializer(Serializer):
 
 
 class PingDeserializer(Deserializer):
-    counter = IntField
+    pass
 
 
 
@@ -35,6 +35,7 @@ class Hosts(Collection):
     #name = 'hosts'  #  set automaticaly from class name
     someHCSerializer = HostCollectionSerializer
     some_refer_string = PingSerializer 
+
     class Get(Action):
         serializer = 'someHCSerializer'
          

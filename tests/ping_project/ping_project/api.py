@@ -40,12 +40,19 @@ class Hosts(Collection):
         serializer = 'someHCSerializer'
          
     class Item(Resource):
+        model = Host
         #default_serializer = HostSerializer
         default_serializer = 'some_refer_string'
         alternative_serializer = 'someHCSerializer'
     
+        class Like(Resource):
+            class Get(Action):
+                method = 'PUT'
+            class Post(Action):
+                method = 'POST'
+
         class Get(Action):
-            method = 'PUT'
+            method = 'GET'
     
         class Ping(PayloadAction):
             def process(obj):

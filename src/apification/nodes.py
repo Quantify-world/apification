@@ -28,9 +28,9 @@ class ApiNode(object):
     name = None
 
     def __init__(self, request, args, kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        self.request = request
+        self.args = args       # 
+        self.kwargs = kwargs   # host_pk=1
+        self.request = request #
     
     @property
     def parent(self):

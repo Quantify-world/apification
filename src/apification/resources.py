@@ -2,6 +2,7 @@ from apification.nodes import ApiBranch
 
 
 class Resource(ApiBranch):
+    #TODO refactor with classes, not strings
     @classmethod
     def get_url_argument_name(cls):
         return '%s_pk' % cls.name

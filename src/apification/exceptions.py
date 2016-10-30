@@ -1,3 +1,7 @@
+class ApiStructureError(Exception):
+    pass
+
+
 class NodeParamError(TypeError):
     pass
 

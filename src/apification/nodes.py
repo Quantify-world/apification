@@ -2,6 +2,7 @@
 from django.http import HttpResponseNotAllowed
 
 from apification.serializers import Serializer
+from apification.exceptions import ApiStructureError
 
 
 class ApiNodeMetaclass(type):
@@ -21,6 +22,7 @@ class ApiNodeMetaclass(type):
 
 class ApiNode(object):
     __metaclass__ = ApiNodeMetaclass
+
     _serializers_preparations = None
     parent_class = None
     name = None
@@ -80,9 +82,22 @@ class ApiNode(object):
                     and not attr_name.startswith('_')):
                 yield attr_name, node
 
-    def get_serializer(self, obj, serializer_name='serializer'):
+    def iter_ascedants(self, include_self=False):
+        if include_self:
+            yield self
+        node = self
+        while node.parent is not None:
+            node = node.parent
+            yield node
+
+    def get_serializer(self, serializer_name='serializer'):
         serializer_class = getattr(self, serializer_name)
-        return serializer_class(node=self)
+        for node in self.iter_ascedants(include_self=True):
+            if isinstance(node, serializer_class.node_class):
+                break
+        else:
+            raise ApiStructureError(u'Serializer %s not found in asdendants for %s' % (serializer_class, self))
+        return serializer_class(node=node)
 
 
 class ApiBranch(ApiNode):

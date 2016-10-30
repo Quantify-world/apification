@@ -11,10 +11,6 @@ class Action(ApiLeaf):
     deserializer = 'default_deserializer'
 
     @classmethod
-    def get_name(cls):
-        return cls.name or cls.__name__.lower()
-        
-    @classmethod
     def get_method_and_name(cls):
         if cls.get_name().upper() in api_settings.VALID_HTTP_METHODS:
             return cls.get_name(), ''
@@ -33,9 +29,12 @@ class Action(ApiLeaf):
     @classmethod
     def get_urls(cls):
         method, action_name = cls.get_method_and_name()
-        path = r'%s%s$' % (cls.parent.construct_path(), action_name)
+        path = r'%s%s$' % (cls.parent_class.construct_path(), action_name)
 
-        return [url(path, cls.parent.entrypoint, name='%s-%s' % (cls.parent.name, cls.get_name()))]
+        return [url(path, cls.parent_class.entrypoint, name='%s-%s' % (cls.parent_class.get_name(), cls.get_name()))]
+
+    def process(self, obj):
+        return obj
 
     def run(self):
         obj = self.parent.get_object()

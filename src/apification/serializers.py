@@ -12,28 +12,27 @@ class Serializer(object):
 
     def __init__(self, node):
         assert isinstance(node, self.node_class)
-
         self.node = node
         
-    def run(self):
+    def run(self, obj):
         renderer = self.get_renderer()
-        data = self.from_object()
+        data = self.from_object(obj)
         return HttpResponse(renderer.render(data))  # TODO: may be move Response-wrapping to Renderer
     
     def get_renderer(self):
         from apification.renderers import JSONRenderer
         return JSONRenderer()
     
-    def from_object(self):
-        raise NotImplementedError()  # self.node.get_object()
+    def from_object(self, obj):
+        raise NotImplementedError()
 
 
 class ListSerializer(Serializer):
     serializer_name = 'default_serializer'
-    def from_object(self):
+    def from_object(self, obj):
         ret = []
         for node in self.iter_nodes():
             serializer = node.get_serializer(serializer_name=self.serializer_name)
-            data = serializer.run(node.get_object())
+            data = serializer.from_object(node.get_object())
             ret.append(data)
         return ret

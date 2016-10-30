@@ -1,7 +1,14 @@
-from ping_project.api import Hosts, PingSerializer
+from ping_project.api import Hosts, HostSerializer
 
 def test_parent_class():
-    assert Hosts.Item.Get.parent_class == Hosts.Item
+    assert Hosts.Host.Get.parent_class == Hosts.Host
 
 def test_serializer_resolve():
-    assert Hosts.Item.Get.serializer == PingSerializer
+    assert Hosts.Host.Get.serializer == HostSerializer
+
+def test_collectible_resolve():
+    assert Hosts.get_collectible_class() == Hosts.Host
+
+def test_params():
+    assert len(Hosts.Host.Get.get_params()) == 2
+

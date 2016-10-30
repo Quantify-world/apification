@@ -1,8 +1,9 @@
 #-*- coding: utf-8 -*-
-from django.http import HttpResponseNotAllowed
+from django.http import HttpResponseNotAllowed, HttpRequest
 
 from apification.serializers import Serializer
-from apification.exceptions import ApiStructureError
+from apification.exceptions import ApiStructureError, NodeParamError
+from apification.params import RequestParam
 
 
 class ApiNodeMetaclass(type):
@@ -28,11 +29,19 @@ class ApiNode(object):
     name = None
 
     def __init__(self, param_values):
-        for param_name, param_class in self.params.iteritems():
+        for param_name, param_class in self.get_params().iteritems():
             value = param_values.get(param_name)
             param_class.is_valid(self, value)
         self.param_values = param_values
-    
+
+    @classmethod
+    def get_name(cls):
+        return cls.name or cls.__name__.lower()  # for root node
+
+    @classmethod
+    def construct_path(cls):
+        raise NotImplementedError()
+
     @property
     def parent(self):
         if self.parent_class is None:
@@ -47,8 +56,12 @@ class ApiNode(object):
             cls._params = {}
             if cls.parent_class is not None:
                 cls._params.update(cls.parent_class.get_params())
-            cls.params.update(cls.params)
+            cls._params.update(cls.get_local_params())
         return cls._params
+
+    @classmethod
+    def get_local_params(cls):
+        return {'request': RequestParam}
 
     @classmethod
     def prepare_serializers(cls):
@@ -103,7 +116,7 @@ class ApiNode(object):
 class ApiBranch(ApiNode):
     @classmethod
     def get_path(cls):
-        raise NotImplementedError()
+        return cls.get_name() + '/'
 
     @classmethod
     def entrypoint(cls, request, *args, **kwargs):
@@ -115,12 +128,12 @@ class ApiBranch(ApiNode):
             raise HttpResponseNotAllowed()
 
         param_values = {}
-        for param_name, param_class in action_class.params.iteritems():
-            param_values[param_name] = param_class.contruct(cls, request, args, kwargs)
+        for param_name, param_class in action_class.get_params().iteritems():
+            param_values[param_name] = param_class.construct(cls, request, args, kwargs)
         try:
             action = action_class(param_values)
             return action.run()
-        except NodeParamError as e:
+        except NodeParamError:
             return HttpRequest(status=500)  # TODO: report, logging etc
 
     @classmethod
@@ -144,9 +157,6 @@ class ApiBranch(ApiNode):
             path += cls.parent_class.construct_path()
         path += cls.get_path()
         return path
-
-    def get_object(self):
-        raise NotImplementedError()
 
 
 class ApiLeaf(ApiNode):

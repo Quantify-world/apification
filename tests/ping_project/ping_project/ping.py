@@ -2,11 +2,13 @@ from commands import getoutput
 PING_CMD = """LANG=C ping %s -c %s | grep 'packet loss' | awk ' { print $ 6} ' | sed 's/\%%//g'""" 
 HOSTS = ['ya.ru', 'github.com']
 
+
 class Host(object):
-    __slots__ = ['hostname']
+    __slots__ = ['hostname', 'pk']
     
-    def __init__(self, hostname, ):
+    def __init__(self, hostname):
         self.hostname = hostname
+        self.pk = HOSTS.index(self.hostname)
     
     def __str__(self):
         return self.hostname

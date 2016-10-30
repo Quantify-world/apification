@@ -36,13 +36,15 @@ class Param(object):
 
 
 class PathParam(Param):   # base class for fetch params from url
-    pass
+    @classmethod
+    def get_path(cls):
+        raise NotImplementedError()
 
 
 class PkParam(PathParam):
     @classmethod
     def construct(cls, node_class, request, args, kwargs):
-        return kwargs['%s_pk' % node_class.get_name()]
+        return kwargs[node_class.get_url_argument_name()]
 
     @classmethod
     def is_valid(cls, node_class, value):
@@ -50,6 +52,10 @@ class PkParam(PathParam):
             int(value)
         except (TypeError, ValueError):
             raise InvalideParamError('Primary key value must be integer, not %s' % (type(value)))
+
+    @classmethod
+    def get_path(cls, node_class):
+        return r'(?P<%s>\d+)/' % node_class.get_url_argument_name()
 
 
 class RequestParam(Param):

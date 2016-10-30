@@ -26,7 +26,7 @@ class Action(ApiLeaf):
         from apification.serializers import Serializer
 
         if isinstance(cls.serializer, type) and issubclass(cls.serializer, Serializer):
-            cls.serializer.node = cls  # set serializer context
+            cls.serializer.node_class = cls  # set serializer context
         else:  # string
             cls._serializers_preparations = [(cls.serializer, {cls: 'serializer'})]
 
@@ -37,24 +37,13 @@ class Action(ApiLeaf):
 
         return [url(path, cls.parent.entrypoint, name='%s-%s' % (cls.parent.name, cls.get_name()))]
 
-
     def run(self):
         obj = self.parent.get_object()
-        ret = self.process(obj)
-        return self.get_serializer(ret).run()
+        obj = self.process(obj)
+        return self.get_serializer().run(obj)
 
-    def process(self, obj):
-        return obj
-
-    # def get_serializer(self, obj):
-    #     self.serializer
-    #     pass
-    
     def get_deserializer(self):
         pass
-    
-
-    
 
 
 class PayloadAction(Action):

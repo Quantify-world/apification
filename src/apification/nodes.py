@@ -17,28 +17,36 @@ class ApiNodeMetaclass(type):
     @property
     def urls(cls):
         return cls.get_urls()
-#  1. После создания класса ApiNode, но до инстанцирования его объектов мы должны знать где какой сериалайзер сидит.
-#  2. Контекст, в котором работает сериалайзер нужно подсовывать в класс сериалайзера в момент его дефинишена.
-#  3. Прошлый пункт можно исполнить, только есил делать это в метаклассе Node
+
 
 class ApiNode(object):
     __metaclass__ = ApiNodeMetaclass
     _serializers_preparations = None
-    parent_class = None  # in class will point to parent class, in instance will lazy-point to parent instance
+    parent_class = None
     name = None
 
-    def __init__(self, request, args, kwargs):
-        self.args = args       # 
-        self.kwargs = kwargs   # host_pk=1
-        self.request = request #
+    def __init__(self, param_values):
+        for param_name, param_class in self.params.iteritems():
+            value = param_values.get(param_name)
+            param_class.is_valid(self, value)
+        self.param_values = param_values
     
     @property
     def parent(self):
         if self.parent_class is None:
             return None
         if not hasattr(self, '_parent'):
-            self._parent = self.parent_class(self.request, args=self.args, kwargs=self.kwargs)
+            self._parent = self.parent_class(self.param_values)
         return self._parent
+
+    @classmethod
+    def get_params(cls):
+        if not hasattr(cls, '_params'):
+            cls._params = {}
+            if cls.parent_class is not None:
+                cls._params.update(cls.parent_class.get_params())
+            cls.params.update(cls.params)
+        return cls._params
 
     @classmethod
     def prepare_serializers(cls):
@@ -49,7 +57,7 @@ class ApiNode(object):
         for attr_name, mapping in children_serializers_preparations:
             value = getattr(cls, attr_name, None)  # serializer or string
             if isinstance(value, type) and issubclass(value, Serializer):  # actual serializer - resolve finished
-                value.node = cls  # set serializer context to it's container node
+                value.node_class = cls  # set serializer context to it's container node
                 for klass, name in mapping.iteritems():  # set real serializer to all requesting nodes
                     setattr(klass, name, value)
             else:  # string - need to look up in hierarchy
@@ -72,6 +80,10 @@ class ApiNode(object):
                     and not attr_name.startswith('_')):
                 yield attr_name, node
 
+    def get_serializer(self, obj, serializer_name='serializer'):
+        serializer_class = getattr(self, serializer_name)
+        return serializer_class(node=self)
+
 
 class ApiBranch(ApiNode):
     @classmethod
@@ -87,8 +99,14 @@ class ApiBranch(ApiNode):
         else:
             raise HttpResponseNotAllowed()
 
-        action = action_class(request, args=args, kwargs=kwargs)
-        return action.run()
+        param_values = {}
+        for param_name, param_class in action_class.params.iteritems():
+            param_values[param_name] = param_class.contruct(cls, request, args, kwargs)
+        try:
+            action = action_class(param_values)
+            return action.run()
+        except NodeParamError as e:
+            return HttpRequest(status=500)  # TODO: report, logging etc
 
     @classmethod
     def iter_actions(cls):
@@ -115,6 +133,6 @@ class ApiBranch(ApiNode):
     def get_object(self):
         raise NotImplementedError()
 
+
 class ApiLeaf(ApiNode):
     pass
-

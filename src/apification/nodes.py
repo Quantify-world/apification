@@ -1,5 +1,5 @@
 #-*- coding: utf-8 -*-
-from django.http import HttpResponseNotAllowed, HttpRequest
+from django.http import HttpResponseNotAllowed, HttpRequest, HttpResponse
 
 from apification.serializers import Serializer
 from apification.exceptions import ApiStructureError, NodeParamError
@@ -103,14 +103,20 @@ class ApiNode(object):
             node = node.parent
             yield node
 
-    def get_serializer(self, serializer_name='serializer'):
+    def serialize(self, obj, serializer_name='default_serializer'):
         serializer_class = getattr(self, serializer_name)
         for node in self.iter_ascedants(include_self=True):
             if isinstance(node, serializer_class.node_class):
                 break
         else:
             raise ApiStructureError(u'Serializer %s not found in asdendants for %s' % (serializer_class, self))
-        return serializer_class(node=node)
+        return serializer_class.from_object(node, obj)
+
+    @classmethod
+    def render(cls, data):
+        from apification.renderers import JSONRenderer
+        data = JSONRenderer().render(data)
+        return HttpResponse(data)
 
 
 class ApiBranch(ApiNode):

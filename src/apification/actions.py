@@ -1,5 +1,4 @@
 from django.conf.urls import url
-from django.core.exceptions import ImproperlyConfigured
 
 from apification import api_settings
 from apification.nodes import ApiLeaf
@@ -39,7 +38,8 @@ class Action(ApiLeaf):
     def run(self):
         obj = self.parent.get_object()
         obj = self.process(obj)
-        return self.get_serializer().run(obj)
+        data = self.serialize(obj, serializer_name='serializer')
+        return self.render(data)
 
     def get_deserializer(self):
         pass
@@ -48,7 +48,8 @@ class Action(ApiLeaf):
 class PayloadAction(Action):
     method = 'POST'
 
-    # def get_deserializer(self):
+    def deserialize(self):
+        pass
     #     node = self
     #     while not node.deserializer_class:
     #         node = node.parent
@@ -59,6 +60,7 @@ class PayloadAction(Action):
     #         raise ImproperlyConfigured("deserializer_class set nowhere from %s to %s" % (self, node))
         
     def run(self):
-        obj = self.get_deserializer().run()
-        ret = self.process(obj)
-        return self.get_serializer(ret).run()
+        obj = self.deserialize()
+        obj = self.process(obj)
+        data = self.serialize(obj, serializer_name='serializer')
+        return self.render(data)

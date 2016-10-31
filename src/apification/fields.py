@@ -1,20 +1,15 @@
+from apification.serializers import Serializer
 
-# class NodeMeta(type):
-#     def __getattribute__(cls, name):
-#         if cls.node:
-#             getattr(cls.node, name)
-# 
-# class node(object):
-#     __metaclass__ = nodeMeta
+class Field(Serializer):
+    @classmethod
+    def from_object(cls, obj, **kwargs):
+        value = getattr(obj, cls.name)
+        return value
 
-from apification.deserializers import ctx
 
-class HostDeser(Deser):
-    like = ctx('Like.deserializer')  # ctx.Like.deserializer
+class IntField(Field):
+    pass
 
-        
-class PingDeser(Deser):
-    count = factory(IntField, requred=True)
-    extra_args = factory(ExtraArgs)
-    
-    ('id', 'title', '')
+
+class TextField(Field):
+    pass

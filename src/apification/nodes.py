@@ -87,12 +87,12 @@ class ApiNode(object):
     def iter_children(cls):
         for attr_name in dir(cls):
             if (attr_name == 'parent_class'
+                    or attr_name.startswith('_')
                     or isinstance(getattr(type(cls), attr_name, None), property)):  # prevent accesing properties
                 continue
 
             node = getattr(cls, attr_name)
-            if (type(node) is cls.__metaclass__  # issubclass(node, ApiNode) # we can't reference ApiNode before class creation
-                    and not attr_name.startswith('_')):
+            if (type(node) is cls.__metaclass__):  # issubclass(node, ApiNode) # we can't reference ApiNode before class creation):
                 yield attr_name, node
 
     def iter_ascedants(self, include_self=False):
@@ -105,12 +105,7 @@ class ApiNode(object):
 
     def serialize(self, obj, serializer_name='default_serializer'):
         serializer_class = getattr(self, serializer_name)
-        for node in self.iter_ascedants(include_self=True):
-            if isinstance(node, serializer_class.node_class):
-                break
-        else:
-            raise ApiStructureError(u'Serializer %s not found in asdendants for %s' % (serializer_class, self))
-        return serializer_class.from_object(node, obj)
+        return serializer_class.from_object(obj, node=self)
 
     @classmethod
     def render(cls, data):

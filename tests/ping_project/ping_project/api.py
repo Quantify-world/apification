@@ -1,8 +1,9 @@
 from apification.actions import Action, PayloadAction
 from apification.resources import Resource
 from apification.collections import Collection, Collectible
-from apification.serializers import Serializer, ListSerializer
+from apification.serializers import Serializer, ListSerializer, NodeSerializer
 from apification.deserializers import Deserializer
+from apification.fields import IntField, TextField
 
 from ping_project.ping import Host
 
@@ -12,17 +13,17 @@ class Comment:
 
 
 class HostSerializer(Serializer):
-    @classmethod
-    def from_object(cls, node, obj):
-        return {'hostname': obj.hostname}
+    class Pk(IntField):
+        pass
+
+    class Hostname(TextField):
+        pass
 
     
-# class HostCollectionSerializer(Serializer):
-#     class Items(ListSerializer):
-        # pass
+class HostCollectionSerializer(NodeSerializer):
+    class Items(ListSerializer):
+        pass
 
-class HostCollectionSerializer(ListSerializer):
-    pass
 
 class PingSerializer(Serializer):
     pass

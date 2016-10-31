@@ -50,14 +50,6 @@ class PayloadAction(Action):
 
     def deserialize(self):
         pass
-    #     node = self
-    #     while not node.deserializer_class:
-    #         node = node.parent
-    #     
-    #     if node.deserializer_class:    
-    #         return node.deserializer_class(action=self)
-    #     else:
-    #         raise ImproperlyConfigured("deserializer_class set nowhere from %s to %s" % (self, node))
         
     def run(self):
         obj = self.deserialize()

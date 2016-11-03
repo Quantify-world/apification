@@ -12,9 +12,7 @@ class SerializerMetaclass(type):
 
     def __iter__(cls):
         for attr_name in dir(cls):
-            if (attr_name.startswith('_')
-                    or attr_name == 'node_class'
-                    or isinstance(getattr(type(cls), attr_name, None), property)):  # prevent accesing properties
+            if (attr_name.startswith('_') or attr_name == 'node_class'):
                 continue
         
             sub_serializer = getattr(cls, attr_name)

@@ -86,9 +86,7 @@ class ApiNode(object):
     @classmethod
     def iter_children(cls):
         for attr_name in dir(cls):
-            if (attr_name == 'parent_class'
-                    or attr_name.startswith('_')
-                    or isinstance(getattr(type(cls), attr_name, None), property)):  # prevent accesing properties
+            if (attr_name == 'parent_class' or attr_name.startswith('_')):
                 continue
 
             node = getattr(cls, attr_name)

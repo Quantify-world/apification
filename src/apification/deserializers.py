@@ -40,9 +40,6 @@ class Deserializer(object):
     @classmethod
     def iter_children(cls):
         for attr_name in dir(cls):
-            if (isinstance(getattr(type(cls), attr_name, None), property)):  # prevent accesing properties
-                continue
-
             node = getattr(cls, attr_name)
             if (type(node) is cls.__metaclass__ and not attr_name.startswith('_')):
                 yield attr_name, node

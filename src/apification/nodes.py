@@ -101,6 +101,15 @@ class ApiNode(object):
             node = node.parent
             yield node
 
+    @classmethod
+    def get_root_class(cls):
+        if cls.parent_class is None:
+            return cls
+        node_class = cls
+        while node_class.parent_class is not None:
+            node_class = node_class.parent_class
+        return node_class
+
     def serialize(self, obj, serializer_name='default_serializer'):
         serializer_class = getattr(self, serializer_name)
         return serializer_class.from_object(obj, node=self)

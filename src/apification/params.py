@@ -1,21 +1,30 @@
+import abc
+
 from django.http import HttpRequest
 
 from apification.exceptions import InvalideParamError, MissingParamError
 
 
-class ParamMetaclass(type):
-    def __unicode__(cls):
-        return u'Param %s' % cls.__name__.lower()
+class abstractclassmethod(classmethod):
+
+    __isabstractmethod__ = True
+
+    def __init__(self, callable):
+        def error(cls, *arg, **kwargs):
+            raise TypeError(u"Can't call abstract class method of \"%s\"" % cls)
+        callable.__isabstractmethod__ = True
+        super(abstractclassmethod, self).__init__(error)
 
 
 class Param(object):
+    __metaclass__ = abc.ABCMeta
     node = None
     required = True
 
     def __init__(self):
         raise TypeError(u'Params could not be instantiated')
-
-    @classmethod
+    
+    @abstractclassmethod
     def construct(cls, node_class, request, args, kwargs):
         raise NotImplementedError()
 

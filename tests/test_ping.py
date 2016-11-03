@@ -10,6 +10,5 @@ def test_serializer_resolve():
 def test_collectible_resolve():
     assert Hosts.get_collectible_class() == Hosts.Host
 
-def test_params():
+def test_params_definition():
     assert len(Hosts.Host.Get.get_params()) == 2
-

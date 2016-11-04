@@ -75,13 +75,15 @@ class ApiNode(object):
                 value.node_class = cls  # set serializer context to it's container node
                 for klass, name in mapping.iteritems():  # set real serializer to all requesting nodes
                     setattr(klass, name, value)
-            else:  # string - need to look up in hierarchy
-                if value is None:
-                    entry = (attr_name, mapping)
-                else:
-                    mapping[cls] = attr_name
-                    entry = (value, mapping)
+            elif isinstance(value, basestring):  # string - need to look up in hierarchy
+                mapping[cls] = attr_name
+                entry = (value, mapping)
                 cls._serializers_preparations.append(entry)
+            elif value is None:  # skip next level up
+                entry = (attr_name, mapping)
+                cls._serializers_preparations.append(entry)
+            else:  # not suitable type
+                raise ApiStructureError("Serializer for %s must be Serializer subclass or string, not %s" % (cls, type(value)))
 
     @classmethod
     def iter_children(cls):

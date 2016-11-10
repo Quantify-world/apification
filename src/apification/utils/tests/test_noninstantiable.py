@@ -2,7 +2,6 @@ import warnings
 from apification.utils import Noninstantiable, NoninstantiableMeta
 
 
-
 def test_noninstantiable():
     e, o  = None, None
     try:
@@ -13,6 +12,7 @@ def test_noninstantiable():
 
 def test_noninstantiable_keyword_self_check_invalid():
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         class C(Noninstantiable):
             def func(self, a, b=1):
                 pass

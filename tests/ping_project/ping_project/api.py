@@ -61,11 +61,13 @@ class Hosts(Collection):
         class Like(Resource):
             class Get(Action):
                 method = 'PUT'
+
             class Post(Action):
                 method = 'POST'
 
         class Comments(Collection):
             model = Comment
+
             class Item(Resource):
                 default_serializer = CommentSerializer
 

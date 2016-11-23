@@ -1,16 +1,28 @@
-from django.core.checks import register, Tags, Error
+from django.core.checks import register, Error
 
 from apification.utils.discover import discover_tree
 from apification.nodes import ApiNode
 from apification.actions import Action
+
+def fetch_actions_under(node):
+    ret = []
+    for name, subnode in node.iter_children():
+        if issubclass(subnode, Action):
+            ret.append(subnode)
+        else:
+            ret.extend(fetch_actions_under(subnode))
+    return ret
+
 
 
 @register()
 def all_checks(app_configs, **kwargs):
     errors = []
     for root in discover_tree():
+        actions = fetch_actions_under(root)
         errors.extend(check_type(root))
-        errors.extend(check_actions_are_leafs(root))
+        errors.extend(check_actions_are_leafs(actions))
+        errors.extend(check_no_action_without_serializer(actions))
     return errors
 
 
@@ -28,27 +40,38 @@ def check_type(root):
     return errors
 
 
-def check_actions_are_leafs(root):
+def check_actions_are_leafs(actions):  # FIXME: Do we realy need root here?
     errors = []
-    actions = []
-    
-    def fetch_actions_under (node):
-        for name, subnode in node.iter_children():
-            if issubclass(subnode, Action):
-                actions.append(subnode)
-            else:
-                fetch_actions_under(subnode)
-    
-    fetch_actions_under(root)
+
     for action in actions:
         if tuple(action.iter_children()):  # if at least one child
             children = map(str, zip(*action.iter_children())[1])
             errors.append(
                 Error(
-                    'Action must have not child nodes, but %s have these children: %s.' % (action, ', '.join(children)),
+                    'Action must have no child nodes, but it have these children: %s' % ', '.join(children),
                     # hint='A hint.',
-                    obj=root,
+                    obj=action,
                     id='apification.E002',
                 )
             )
     return errors
+
+
+def check_no_action_without_serializer(actions):
+    errors = []
+    without_serializers = []
+    for action in actions:
+        if not action.serializer:
+            without_serializers.append(str(action))
+    
+    if without_serializers:
+        errors.append(
+            Error(
+                'These Actions have no serializers: %s' % ', '.join(without_serializers),
+                # hint='A hint.',
+                obj=action.parent_class,
+                id='apification.E003',
+            )
+        )
+    return errors
+    

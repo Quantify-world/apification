@@ -22,7 +22,22 @@ class ApiNodeMetaclass(type):
     def urls(cls):
         cls.get_root_class()  # check for loops
         return cls.get_urls()
-
+    
+    def __str__(cls):
+        s = cls.__name__
+        node = cls
+        i = 0
+        N = 10
+        while node.parent_class is not None and i < N:
+            s = node.parent_class.__name__+'.'+s
+            node = node.parent_class
+            i += 1
+        if i == N:
+            s = ' ...%s' % s
+        else:
+            s = '.%s' % s
+        
+        return '%s%s' % (node.__module__, s)
 
 class ApiNode(object):
     __metaclass__ = ApiNodeMetaclass

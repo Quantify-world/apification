@@ -19,11 +19,12 @@ class Action(ApiLeaf):
     @classmethod
     def prepare_serializers(cls):
         from apification.serializers import Serializer
-
         if isinstance(cls.serializer, type) and issubclass(cls.serializer, Serializer):
             cls.serializer.node_class = cls  # set serializer context
-        else:  # string
+        elif isinstance(cls.serializer, basestring):  # string
             cls._serializers_preparations = [(cls.serializer, {cls: 'serializer'})]
+        else:
+            pass
 
     @classmethod
     def get_urls(cls):

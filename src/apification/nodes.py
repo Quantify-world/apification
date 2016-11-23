@@ -9,6 +9,10 @@ from apification.params import RequestParam
 class ApiNodeMetaclass(type):
     def __new__(cls, name, parents, dct):
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
+        # Initializing internal class attributes
+        ret._serializers_preparations = None
+        ret.parent_class = None
+
         for node_name, node_class in ret.iter_children():
             if node_class.parent_class is not None:
                 raise ApiStructureError(u'Duplicate in API tree: %s already has parent %s though %s can not be set as new parent.' % (node_class, node_class.parent_class, ret))
@@ -41,9 +45,6 @@ class ApiNodeMetaclass(type):
 
 class ApiNode(object):
     __metaclass__ = ApiNodeMetaclass
-
-    _serializers_preparations = None
-    parent_class = None
     name = None
 
     def __init__(self, param_values):
@@ -83,11 +84,13 @@ class ApiNode(object):
 
     @classmethod
     def prepare_serializers(cls):
+        """
+        """
         cls._serializers_preparations = []
-        children_serializers_preparations = []
+        children_preparations = []
         for attr_name, node in cls.iter_children():
-            children_serializers_preparations.extend(node._serializers_preparations)
-        for attr_name, mapping in children_serializers_preparations:
+            children_preparations.extend(node._serializers_preparations or ())
+        for attr_name, mapping in children_preparations:
             value = getattr(cls, attr_name, None)  # serializer or string
             if isinstance(value, type) and issubclass(value, Serializer):  # actual serializer - resolve finished
                 value.node_class = cls  # set serializer context to it's container node

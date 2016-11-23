@@ -16,8 +16,8 @@ class Root(Resource):
             
             class Get(Action):
                 pass
-    
-    parent_class = SecondItem.SubItem
+
+Root.parent_class = Root.SecondItem.SubItem
 
 
 class ApiCase(TestCase):

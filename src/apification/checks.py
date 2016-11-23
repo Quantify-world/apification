@@ -3,6 +3,7 @@ from django.core.checks import register, Error
 from apification.utils.discover import discover_tree
 from apification.nodes import ApiNode
 from apification.actions import Action
+from apification.serializers import Serializer
 
 def fetch_actions_under(node):
     ret = []
@@ -61,13 +62,13 @@ def check_no_action_without_serializer(actions):
     errors = []
     without_serializers = []
     for action in actions:
-        if not action.serializer:
+        if not isinstance(action.serializer, type) or not issubclass(action.serializer, Serializer):
             without_serializers.append(str(action))
     
     if without_serializers:
         errors.append(
             Error(
-                'These Actions have no serializers: %s' % ', '.join(without_serializers),
+                'These Actions have no suitable serializers: %s' % ', '.join(without_serializers),
                 # hint='A hint.',
                 obj=action.parent_class,
                 id='apification.E003',

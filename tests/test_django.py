@@ -3,11 +3,9 @@ from django.core.urlresolvers import reverse
 from django.conf.urls import url, include
 
 from apification.params import Param
-from apification.actions import Action, PayloadAction
-from apification.resources import Resource
+from apification.actions import Action
 from apification.collections import Collection, Collectible
 from apification.serializers import Serializer, ListSerializer, NodeSerializer
-from apification.deserializers import Deserializer
 from apification.fields import IntField, TextField
 from ping_project.ping import Host
 

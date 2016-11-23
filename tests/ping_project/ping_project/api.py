@@ -73,6 +73,9 @@ class Hosts(Collection):
 
         class Get(Action):
             method = 'GET'
+            
+            # class Qwe(Resource):
+            #     pass
     
         class Ping(PayloadAction):
             def process(obj):

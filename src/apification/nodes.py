@@ -9,15 +9,18 @@ from apification.params import RequestParam
 class ApiNodeMetaclass(type):
     def __new__(cls, name, parents, dct):
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
-        for node_name, node in ret.iter_children():
-            node.parent_class = ret
-            if not node.name:
-                node.name = node_name.lower()
+        for node_name, node_class in ret.iter_children():
+            if node_class.parent_class is not None:
+                raise ApiStructureError(u'Duplicate in API tree: %s already has parent %s though %s can not be set as new parent.' % (node_class, node_class.parent_class, ret))
+            node_class.parent_class = ret
+            if not node_class.name:
+                node_class.name = node_name.lower()
         ret.prepare_serializers()
         return ret
 
     @property
     def urls(cls):
+        cls.get_root_class()  # check for loops
         return cls.get_urls()
 
 
@@ -105,10 +108,12 @@ class ApiNode(object):
 
     @classmethod
     def get_root_class(cls):
-        if cls.parent_class is None:
-            return cls
+        seen = set()
         node_class = cls
         while node_class.parent_class is not None:
+            if node_class in seen:
+                raise ApiStructureError(u"API tree is not actually tree: loop found at %s" % node_class)
+            seen.add(node_class)
             node_class = node_class.parent_class
         return node_class
 

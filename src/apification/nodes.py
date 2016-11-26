@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 from django.http import HttpResponseNotAllowed, HttpRequest, HttpResponse
 
-from apification.serializers import Serializer
+from apification.serializers import NodeSerializer
 from apification.exceptions import ApiStructureError, NodeParamError
 from apification.params import RequestParam
 
@@ -110,7 +110,7 @@ class ApiNode(object):
         sb = SerializerBail(cls)
         for attr_name, mapping in sb.iter_sb_children():
             value = getattr(cls, attr_name, None)  # current class attribute name fetched from children
-            if isinstance(value, type) and issubclass(value, Serializer):  # actual serializer - resolve finished
+            if isinstance(value, type) and issubclass(value, NodeSerializer):  # actual serializer - resolve finished
                 sb.resolve(value, mapping)
             elif isinstance(value, basestring):  # string - need to look up in hierarchy
                 mapping[cls] = attr_name
@@ -118,7 +118,7 @@ class ApiNode(object):
             elif value is None:  # skip next level up
                 sb.add(attr_name, mapping)
             else:  # not suitable type
-                raise ApiStructureError("Serializer for %s must be Serializer subclass or string, not %s" % (cls, type(value)))
+                raise ApiStructureError("Serializer for %s must be NodeSerializer subclass or string, not %s" % (cls, type(value)))
 
     @classmethod
     def iter_children(cls):

@@ -12,7 +12,7 @@ class Comment:
     pass
 
 
-class HostSerializer(Serializer):
+class HostSerializer(NodeSerializer):
     class Pk(IntField):
         pass
 
@@ -25,19 +25,19 @@ class HostCollectionSerializer(NodeSerializer):
         pass
 
 
-class PingSerializer(Serializer):
+class PingSerializer(NodeSerializer):
     pass
 
 
-class HostSerializer2(Serializer):
+class HostSerializer2(NodeSerializer):
     pass
     #comments = CommentCollectionSerializer
     
 
-class CommentCollectionSerializer(Serializer):
+class CommentCollectionSerializer(NodeSerializer):
     pass
 
-class CommentSerializer(Serializer):
+class CommentSerializer(NodeSerializer):
     pass
 
 class PingDeserializer(Deserializer):

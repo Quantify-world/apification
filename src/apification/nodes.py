@@ -6,6 +6,29 @@ from apification.exceptions import ApiStructureError, NodeParamError
 from apification.params import RequestParam
 
 
+class SerializerBail(list):
+    def __init__(self, node_class):
+        super(SerializerBail, self).__init__()
+        self.node_class = node_class
+        node_class._serializers_preparations = self
+
+    def init_action(self):
+        self.add(attr_name=self.node_class.serializer, mapping={self.node_class: 'serializer'})
+
+    def iter_sb_children(self):
+        for attr_name, subnode_class in self.node_class.iter_children():
+            for attr_name, mapping in subnode_class._serializers_preparations or ():
+                yield (attr_name, mapping)
+
+    def add(self, attr_name, mapping):
+        self.append((attr_name, mapping))
+
+    def resolve(self, serializer, mapping):
+        serializer.node_class = self.node_class  # set serializer context to it's container node
+        for klass, name in mapping.iteritems():  # set real serializer to all requesting nodes
+            setattr(klass, name, serializer)
+
+
 class ApiNodeMetaclass(type):
     def __new__(cls, name, parents, dct):
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
@@ -84,25 +107,16 @@ class ApiNode(object):
 
     @classmethod
     def prepare_serializers(cls):
-        """
-        """
-        cls._serializers_preparations = []
-        children_preparations = []
-        for attr_name, node in cls.iter_children():
-            children_preparations.extend(node._serializers_preparations or ())
-        for attr_name, mapping in children_preparations:
-            value = getattr(cls, attr_name, None)  # serializer or string
+        sb = SerializerBail(cls)
+        for attr_name, mapping in sb.iter_sb_children():
+            value = getattr(cls, attr_name, None)  # current class attribute name fetched from children
             if isinstance(value, type) and issubclass(value, Serializer):  # actual serializer - resolve finished
-                value.node_class = cls  # set serializer context to it's container node
-                for klass, name in mapping.iteritems():  # set real serializer to all requesting nodes
-                    setattr(klass, name, value)
+                sb.resolve(value, mapping)
             elif isinstance(value, basestring):  # string - need to look up in hierarchy
                 mapping[cls] = attr_name
-                entry = (value, mapping)
-                cls._serializers_preparations.append(entry)
+                sb.add(value, mapping)
             elif value is None:  # skip next level up
-                entry = (attr_name, mapping)
-                cls._serializers_preparations.append(entry)
+                sb.add(attr_name, mapping)
             else:  # not suitable type
                 raise ApiStructureError("Serializer for %s must be Serializer subclass or string, not %s" % (cls, type(value)))
 

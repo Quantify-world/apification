@@ -4,7 +4,7 @@ from django.conf.urls import url, include
 
 from apification.params import Param
 from apification.actions import Action
-from apification.collections import Collection, Collectible
+from apification.resource_collections import Collection, Collectible
 from apification.serializers import Serializer, ListSerializer, NodeSerializer
 from apification.fields import IntField, TextField
 from ping_project.ping import Host

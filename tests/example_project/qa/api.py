@@ -1,5 +1,5 @@
 from apification.resources import DjangoResource
-from apification.collections import DjangoCollection
+from apification.resource_collections import DjangoCollection
 from apification.actions  import Action
 from apification.readers import Reader
 from apification.writers import Writer

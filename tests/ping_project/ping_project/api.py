@@ -1,6 +1,6 @@
 from apification.actions import Action, PayloadAction
 from apification.resources import Resource
-from apification.collections import Collection, Collectible
+from apification.resource_collections import Collection, Collectible
 from apification.serializers import Serializer, ListSerializer, NodeSerializer
 from apification.deserializers import Deserializer
 from apification.fields import IntField, TextField
@@ -52,7 +52,9 @@ class Hosts(Collection):
         pass
 
     class Rating(Resource):
-        pass
+        class SubResource(Resource):
+            class Get(Action):
+                pass
 
     class Host(Collectible):
         model = Host
@@ -67,7 +69,7 @@ class Hosts(Collection):
 
         class Comments(Collection):
             model = Comment
-
+            
             class Item(Resource):
                 default_serializer = CommentSerializer
 

@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
 from apification import api_settings
-from apification.nodes import ApiLeaf
+from apification.nodes import ApiLeaf, SerializerBail
 
 
 class Action(ApiLeaf):
@@ -22,9 +22,10 @@ class Action(ApiLeaf):
         if isinstance(cls.serializer, type) and issubclass(cls.serializer, Serializer):
             cls.serializer.node_class = cls  # set serializer context
         elif isinstance(cls.serializer, basestring):  # string
-            cls._serializers_preparations = [(cls.serializer, {cls: 'serializer'})]
+            SerializerBail(cls).init_action()
+                # [(cls.serializer, {cls: 'serializer'})]
         else:
-            pass
+            pass  # TODO: raise warning
 
     @classmethod
     def get_urls(cls):

@@ -1,7 +1,7 @@
 import inspect
 import warnings
 
-from types import MethodType, FunctionType
+from types import MethodType
 
 
 SELF_WARN_MESSAGE = """"self" found as first argument for %(method)s method of class %(cls)s.

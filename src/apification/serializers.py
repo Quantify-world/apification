@@ -1,7 +1,8 @@
 from apification.exceptions import ApiStructureError
+from apification.utils import writeonce
+from apification.utils.noninstantiable import NoninstantiableMeta
 
-
-class SerializerMetaclass(type):
+class SerializerMetaclass(NoninstantiableMeta):
     def __new__(cls, name, parents, dct):
         ret = super(SerializerMetaclass, cls).__new__(cls, name, parents, dct)
         for name, sub_serializer in ret:
@@ -19,11 +20,9 @@ class SerializerMetaclass(type):
             if (type(sub_serializer) is cls.__metaclass__):
                 yield attr_name, sub_serializer
 
-
+@writeonce(parent_serializer=None, name=None)
 class Serializer(object):
     __metaclass__ = SerializerMetaclass
-    parent_serializer = None
-    name = None
 
     def __init__(self):
         raise TypeError(u'%s is not instantiatiable entity' % self.__class__)
@@ -37,7 +36,7 @@ class Serializer(object):
 
 
 class NodeSerializer(Serializer):
-    node_class = None
+    node_class = writeonce(None)
 
     @classmethod
     def get_node_class(cls):

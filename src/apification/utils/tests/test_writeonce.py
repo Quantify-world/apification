@@ -1,4 +1,5 @@
 from pytest import raises
+import warnings
 
 from apification.utils import writeonce
 
@@ -88,7 +89,54 @@ def test_inheritance():
     assert b.x == 1
     with raises(TypeError):
         b.x = 4
+
+def test_overwrite_same_warning():
+    class A(object):
+        x = writeonce()
+
+    a = A()
+    a.x = 1
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        a.x = 1
+    assert len(w) == 1
+    assert issubclass(w[0].category, UserWarning)
+
+def test_custom_message():
+    class A(object):
+        x = writeonce(writeonce_msg='qwe-%(name)s-%(instance)s-%(value)s-%(old_value)s')
+
+        def __str__(self):
+            return 'a'
+
+    a = A()
+    a.x = 1
+    with raises(TypeError) as e:
+        a.x = 2
+    assert e.value.message == 'qwe-x-a-2-1'
+
+def test_inheritance_with_override():
+    class A(object):
+        x = 1
     
+    class B(A):
+        x = writeonce()  # explicit override - so it's ok
+    
+    b = B()
+    b.x = 1
+    assert b.x == 1
+    with raises(TypeError):
+        b.x = 4
+        
+def test_inheritance_classdecorator_with_override():
+    class A(object):
+        x = 1
+    
+    with raises(TypeError):
+        @writeonce('x')  # implicit - not ok
+        class B(A):
+            pass
+
 
 def test_inheritance_with_classdecorator():
     @writeonce('x','y')
@@ -127,20 +175,24 @@ def test_classdecorator_default_value():
         a.x = 2
 
 
-
 def test_metaclass_decorator():
-    @writeonce('x','y')
+    @writeonce('x', 'y')
     class M(type):
         pass
     
     class A(object):
         __metaclass__ = M
     
+    class B(A):
+        pass
+    
     A.x = 1
     assert A.x is 1
     with raises(TypeError):
         A.x = 2
 
+    with raises(AttributeError):
+        B.x
 
 def test_metaclass_decorator_inheritance():
     @writeonce('x',y=123)

@@ -21,7 +21,7 @@ class TestURLConf(object):
 @override_settings(ROOT_URLCONF=TestURLConf)
 class ApiCase(TestCase):
     def test_API_tree_duplicates(self):
-        with self.assertRaises(ApiStructureError):
+        with self.assertRaises(TypeError):
             #  Incorrect tree
             class Root(Resource):
                 FirstItem = FirstItem    

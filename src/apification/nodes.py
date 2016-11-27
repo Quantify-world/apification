@@ -4,6 +4,7 @@ from django.http import HttpResponseNotAllowed, HttpRequest, HttpResponse
 from apification.serializers import NodeSerializer
 from apification.exceptions import ApiStructureError, NodeParamError
 from apification.params import RequestParam
+from apification.utils import writeonce
 
 
 class SerializerBail(list):
@@ -30,15 +31,13 @@ class SerializerBail(list):
 
 
 class ApiNodeMetaclass(type):
+    parent_class = writeonce(None, writeonce_msg=u'Duplicate in API tree: %(instance)s already has parent %(old_value)s though %(value)s can not be set as new parent')
     def __new__(cls, name, parents, dct):
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
         # Initializing internal class attributes
         ret._serializers_preparations = None
-        ret.parent_class = None
 
         for node_name, node_class in ret.iter_children():
-            if node_class.parent_class is not None:
-                raise ApiStructureError(u'Duplicate in API tree: %s already has parent %s though %s can not be set as new parent.' % (node_class, node_class.parent_class, ret))
             node_class.parent_class = ret
             if not node_class.name:
                 node_class.name = node_name.lower()

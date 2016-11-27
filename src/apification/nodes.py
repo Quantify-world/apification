@@ -85,10 +85,10 @@ class ApiNode(object):
 
     @property
     def parent(self):
-        if self.parent_class is None:
+        if self.__class__.parent_class is None:
             return None
         if not hasattr(self, '_parent'):
-            self._parent = self.parent_class(self.param_values)
+            self._parent = self.__class__.parent_class(self.param_values)
         return self._parent
 
     @classmethod

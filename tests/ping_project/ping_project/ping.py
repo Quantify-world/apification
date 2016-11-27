@@ -27,4 +27,5 @@ class Host(object):
     def get_list(cls):
         return [Host(h) for h in HOSTS]
     
-    
+    def to_json(self):
+        return {'a': 1}

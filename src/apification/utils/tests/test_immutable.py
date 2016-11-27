@@ -1,4 +1,4 @@
-from apification.utils.immutable import immutable
+from apification.utils import immutable
 
 def build_class1():
     class A(object):

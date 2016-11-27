@@ -1,2 +1,2 @@
 from apification.utils.noninstantiable import Noninstantiable, NoninstantiableMeta
-from apification.utils.immutable import immutable
+from apification.utils.writeonce import writeonce

@@ -22,6 +22,7 @@ class BackendRegistry(list):
                 return backend.run(*args, **kwargs)
             except SkipBackend:
                 continue
+        raise RuntimeError(u'No one from the following backends matches: %s' % ', '.join(map(str, self)))
 
 
 class BackendMetaclass(type):
@@ -41,5 +42,3 @@ class BaseBackend(object):
     @classmethod
     def run(cls, *args, **kwargs):
         raise NotImplementedError()
-
-

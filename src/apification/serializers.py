@@ -32,16 +32,20 @@ class Serializer(object):
         return getattr(cls, 'backends', api_settings.SERIALIZER_BACKENDS)
 
     @classmethod
-    def from_object(cls, obj, **kwargs):
+    def from_children(cls, obj, node):
         ret = {}
         for name, sub_serializer in cls:
-            ret[sub_serializer.name or name.lower()] = sub_serializer.from_object(obj, **kwargs)
+            ret[sub_serializer.name or name.lower()] = sub_serializer.from_object(obj, node)
+        return ret
+
+    @classmethod
+    def from_object(cls, obj, node):
+        node = cls.resolve_node(node)
+        ret = cls.from_children(obj, node)
         registry = cls.get_backend_registry()
         ret.update(registry.run(instance=obj))
         return ret
 
-
-class NodeSerializer(Serializer):
     @classmethod
     def get_node_class(cls):
         ser = cls
@@ -63,21 +67,16 @@ class NodeSerializer(Serializer):
             raise ApiStructureError(u'Serializer %s not found in asdendants for %s' % (cls, node))
         return upnode
 
-    @classmethod
-    def from_object(cls, obj, node):  # TODO: refactor from_object to be more extensible
-        node = cls.resolve_node(node)
-        return super(NodeSerializer, cls).from_object(obj, node=node)
 
-
-class ListSerializer(NodeSerializer):
+class ListSerializer(Serializer):
     serializer_name = 'default_serializer'  # internal serializer name
 
     @classmethod
     def from_object(cls, obj, node):
         node = cls.resolve_node(node)
         ret = []
-        for node in cls.iter_nodes(node):
-            data = node.serialize(node.get_object(), serializer_name=cls.serializer_name)
+        for subnode in cls.iter_nodes(node):
+            data = subnode.serialize(subnode.get_object(), serializer_name=cls.serializer_name)
             ret.append(data)
         return ret
 

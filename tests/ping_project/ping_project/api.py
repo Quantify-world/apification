@@ -1,7 +1,7 @@
 from apification.actions import Action, PayloadAction
 from apification.resources import Resource
 from apification.resource_collections import Collection, Collectible
-from apification.serializers import ListSerializer, NodeSerializer
+from apification.serializers import ListSerializer, Serializer
 from apification.deserializers import Deserializer
 
 from ping_project.ping import Host
@@ -11,33 +11,33 @@ class Comment:
     pass
 
 
-class HostSerializer(NodeSerializer):
+class HostSerializer(Serializer):
     pass
 
     
-class HostCollectionSerializer(NodeSerializer):
-    class Items(ListSerializer):
-        pass
-
-
-class PingSerializer(NodeSerializer):
+class HostCollectionSerializer(ListSerializer):
     pass
 
 
-class HostSerializer2(NodeSerializer):
+class PingSerializer(Serializer):
+    pass
+
+
+class HostSerializer2(Serializer):
     pass
     #comments = CommentCollectionSerializer
     
 
-class CommentCollectionSerializer(NodeSerializer):
+class CommentCollectionSerializer(Serializer):
     pass
 
-class CommentSerializer(NodeSerializer):
+
+class CommentSerializer(Serializer):
     pass
+
 
 class PingDeserializer(Deserializer):
     pass
-
 
 
 class Hosts(Collection):
@@ -54,7 +54,7 @@ class Hosts(Collection):
     class Host(Collectible):
         model = Host
         default_serializer = HostSerializer
-    
+
         class Like(Resource):
             class Get(Action):
                 method = 'PUT'

@@ -5,7 +5,7 @@ from django.conf.urls import url, include
 from apification.params import Param
 from apification.actions import Action
 from apification.resource_collections import Collection, Collectible
-from apification.serializers import Serializer, ListSerializer, NodeSerializer
+from apification.serializers import Serializer, ListSerializer
 
 from ping_project.ping import Host
 
@@ -15,9 +15,8 @@ class HostSerializer(Serializer):
     pass
 
 
-class HostCollectionSerializer(NodeSerializer):
-    class Items(ListSerializer):
-        pass
+class HostCollectionSerializer(ListSerializer):
+    pass
 
 
 class Hosts2(Collection):
@@ -49,5 +48,4 @@ class ApiLocalCase(TestCase):
 class ApiCase(TestCase):
     def test_listing_get(self):
         url = reverse('hosts-get')
-        response = self.client.get(url)
-        raise Exception(response)
+        self.client.get(url)

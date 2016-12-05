@@ -1,8 +1,9 @@
-from apification.utils.instancevisible import instancevisible, InstanceVisibleMeta
+# from apification.utils.instancevisible import instancevisible
+from instancevisible import instancevisible
 
 
 def test_instancevisible():
-    class M(InstanceVisibleMeta):
+    class M(instancevisible.Meta):
         a = 1
 
         @instancevisible
@@ -24,7 +25,7 @@ def test_instancevisible():
 
 
 def test_instancevisible_metaclass_inheritance():
-    class M(InstanceVisibleMeta):
+    class M(instancevisible.Meta):
         a = 1
 
         @instancevisible
@@ -49,7 +50,7 @@ def test_instancevisible_metaclass_inheritance():
 
 
 def test_instancevisible_class_inheritance():
-    class M(InstanceVisibleMeta):
+    class M(instancevisible.Meta):
         a = 1
 
         @instancevisible

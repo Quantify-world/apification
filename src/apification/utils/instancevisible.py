@@ -2,7 +2,7 @@ class InstanceVisibleMeta(type):
     def __new__(cls, cls_name, cls_parents, cls_dict):
         for attr_name in dir(cls):
             attr_value = getattr(cls, attr_name, None)
-            if isinstance(attr_value, instancevisible):
+            if isinstance(attr_value, instancevisible) and attr_name not in cls_dict:
                 cls_dict[attr_name] = classmethod(attr_value.method)
         return super(InstanceVisibleMeta, cls).__new__(cls, cls_name, cls_parents, cls_dict)            
 

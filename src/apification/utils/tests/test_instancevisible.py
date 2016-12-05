@@ -23,6 +23,29 @@ def test_instancevisible():
     assert isinstance(M.f, instancevisible)
 
 
+def test_instancevisible_property():
+    class M(instancevisible.Meta):
+        a = 1
+
+        @instancevisible
+        @property
+        def f(cls):
+            return cls.a
+    
+    class A(object):
+        __metaclass__ = M
+        
+        a = 2
+        
+        def __init__(self):
+            self.a = 3
+
+    i = A()
+
+    assert i.f == 3  # as property is a class-level descriptor with instance argument
+    assert isinstance(A.f, property)
+
+
 def test_instancevisible_metaclass_inheritance():
     class M(instancevisible.Meta):
         a = 1
@@ -34,6 +57,7 @@ def test_instancevisible_metaclass_inheritance():
     class M2(M):
         pass
 
+    class A(object):
         __metaclass__ = M2
         
         a = 2

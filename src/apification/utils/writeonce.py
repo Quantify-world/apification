@@ -6,7 +6,7 @@ class writeonce(object):
         self.name = None
         self.__doc__ = kwargs.pop('writeonce_doc', None)
         self.msg = kwargs.pop('writeonce_msg', None)
-        self.args = args  # for klass decorator case
+        self.args = args  # for class decorator case
         self.kwargs = kwargs
         if args:  # for property case
             self.default = args[0]

@@ -1,10 +1,9 @@
 #-*- coding: utf-8 -*-
-from django.http import HttpResponseNotAllowed, HttpRequest, HttpResponse
+from django.http import HttpResponseNotAllowed, HttpResponse
 
 from apification.serializers import Serializer
-from apification.exceptions import ApiStructureError, NodeParamError
-from apification.params import RequestParam
-from apification.utils import writeonce
+from apification.exceptions import ApiStructureError
+from apification.utils import writeonce, instancevisible
 
 
 class SerializerBail(list):
@@ -30,25 +29,28 @@ class SerializerBail(list):
             setattr(klass, name, serializer)
 
 
-class ApiNodeMetaclass(type):
+class ApiNodeMetaclass(instancevisible.Meta):
     parent_class = writeonce(None, writeonce_msg=u'Duplicate in API tree: %(instance)s already has parent %(old_value)s though %(value)s can not be set as new parent')
+
     def __new__(cls, name, parents, dct):
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
         # Initializing internal class attributes
-        ret._serializers_preparations = None
 
         for node_name, node_class in ret.iter_children():
             node_class.parent_class = ret
             if not node_class.name:
                 node_class.name = node_name.lower()
-        ret.prepare_serializers()
         return ret
+
+    def __init__(cls, name, parents, dct):
+        cls._serializers_preparations = None
+        cls.prepare_serializers()
 
     @property
     def urls(cls):
         cls.get_root_class()  # check for loops
         return cls.get_urls()
-    
+
     def __str__(cls):
         if not hasattr(cls, '_strval'):
             s = cls.__name__
@@ -56,7 +58,7 @@ class ApiNodeMetaclass(type):
             i = 0
             N = 10
             while node.parent_class is not None and i < N:
-                s = node.parent_class.__name__+'.'+s
+                s = node.parent_class.__name__ + '.' + s
                 node = node.parent_class
                 i += 1
             if i == N:
@@ -67,46 +69,20 @@ class ApiNodeMetaclass(type):
             cls._strval = '%s%s' % (node.__module__, s)
         return cls._strval
 
-class ApiNode(object):
-    __metaclass__ = ApiNodeMetaclass
-    name = None
-
-    def __init__(self, param_values):
-        for param_name, param_class in self.get_params().iteritems():
-            value = param_values.get(param_name)
-            param_class.is_valid(self, value)
-        self.param_values = param_values
-
-    @classmethod
+    @instancevisible
     def get_name(cls):
         return cls.name or cls.__name__.lower()  # for root node
 
-    @classmethod
-    def construct_path(cls):
-        raise NotImplementedError()
-
+    @instancevisible
     @property
     def parent(self):
         if self.__class__.parent_class is None:
             return None
         if not hasattr(self, '_parent'):
-            self._parent = self.__class__.parent_class(self.param_values)
+            self._parent = self.__class__.parent_class.from_request(self.request, self.args, self.kwargs)
         return self._parent
 
-    @classmethod
-    def get_params(cls):
-        if not hasattr(cls, '_params'):
-            cls._params = {}
-            if cls.parent_class is not None:
-                cls._params.update(cls.parent_class.get_params())
-            cls._params.update(cls.get_local_params())
-        return cls._params
-
-    @classmethod
-    def get_local_params(cls):
-        return {'request': RequestParam}
-
-    @classmethod
+    @instancevisible
     def prepare_serializers(cls):
         sb = SerializerBail(cls)
         for attr_name, mapping in sb.iter_sb_children():
@@ -121,7 +97,7 @@ class ApiNode(object):
             else:  # not suitable type
                 raise ApiStructureError("Serializer for %s must be Serializer subclass or string, not %s" % (cls, type(value)))
 
-    @classmethod
+    @instancevisible
     def iter_children(cls):
         for attr_name in dir(cls):
             if (attr_name == 'parent_class' or attr_name.startswith('_')):
@@ -131,15 +107,7 @@ class ApiNode(object):
             if (type(node) is cls.__metaclass__):  # issubclass(node, ApiNode) # we can't reference ApiNode before class creation):
                 yield attr_name, node
 
-    def iter_ascedants(self, include_self=False):
-        if include_self:
-            yield self
-        node = self
-        while node.parent is not None:
-            node = node.parent
-            yield node
-
-    @classmethod
+    @instancevisible
     def get_root_class(cls):
         seen = set()
         node_class = cls
@@ -150,15 +118,52 @@ class ApiNode(object):
             node_class = node_class.parent_class
         return node_class
 
-    def serialize(self, obj, serializer_name='default_serializer'):
-        serializer_class = getattr(self, serializer_name)
-        return serializer_class.from_object(obj, node=self)
-
-    @classmethod
+    @instancevisible
     def render(cls, data):
         from apification.renderers import JSONRenderer
         data = JSONRenderer().render(data)
         return HttpResponse(data)
+
+
+class NoInstance(object):
+    class __metaclass__(type):
+        def __nonzero__(self):
+            return False
+
+
+class ApiNode(object):
+    __metaclass__ = ApiNodeMetaclass
+    name = None
+
+    def __init__(self, request, args, kwargs, instance=NoInstance):
+        self.request = request
+        self.args = args
+        self.kwargs = kwargs
+        if instance is NoInstance:
+            self.instance = self.make_instance()
+            self.instance_from_request = True
+        else:
+            self.instance = instance
+            self.instance_from_request = False
+
+    def make_instance(self):
+        raise NotImplementedError()
+
+    @classmethod
+    def construct_path(cls):
+        raise NotImplementedError()
+
+    def iter_ascedants(self, include_self=False):
+        if include_self:
+            yield self
+        node = self
+        while node.parent is not None:
+            node = node.parent
+            yield node
+
+    def serialize(self, serializer_name='default_serializer'):
+        serializer_class = getattr(self, serializer_name)
+        return serializer_class.from_object(self.instance, node=self)
 
 
 class ApiBranch(ApiNode):
@@ -175,14 +180,8 @@ class ApiBranch(ApiNode):
         else:
             raise HttpResponseNotAllowed()
 
-        param_values = {}
-        for param_name, param_class in action_class.get_params().iteritems():
-            param_values[param_name] = param_class.construct(cls, request, args, kwargs)
-        try:
-            action = action_class(param_values)
-            return action.run()
-        except NodeParamError:
-            return HttpRequest(status=500)  # TODO: report, logging etc
+        action = action_class.from_request(request, args, kwargs)
+        return action.run()
 
     @classmethod
     def iter_actions(cls):

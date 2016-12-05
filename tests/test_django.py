@@ -2,13 +2,11 @@ from django.test import TestCase, override_settings
 from django.core.urlresolvers import reverse
 from django.conf.urls import url, include
 
-from apification.params import Param
 from apification.actions import Action
 from apification.resource_collections import Collection, Collectible
 from apification.serializers import Serializer, ListSerializer
 
 from ping_project.ping import Host
-
 
 
 class HostSerializer(Serializer):
@@ -29,10 +27,6 @@ class Hosts2(Collection):
         model = Host
         default_serializer = HostSerializer
 
-    @classmethod
-    def get_local_params(cls):
-        return {'bad_param': Param}
-
 
 class TestURLConf(object):
     urlpatterns = [url('', include(Hosts2.urls))]
@@ -42,7 +36,7 @@ class TestURLConf(object):
 class ApiLocalCase(TestCase):
     def test_params_constuction(self):
         url = reverse('hosts2-get')
-        self.assertRaises(TypeError, self.client.get, url)
+        self.client.get(url)
 
 
 class ApiCase(TestCase):

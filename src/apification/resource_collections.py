@@ -1,5 +1,4 @@
 from apification.nodes import ApiBranch
-from apification.params import PkParam
 from apification.exceptions import ApiStructureError
 from apification.resources import Resource
 
@@ -32,17 +31,9 @@ class Collection(ApiBranch):
             raise ApiStructureError(u'No collectable classes specified in collection %s' % cls)
         return collectible_class
 
-    @classmethod
-    def get_collectible_pk_param(cls):
-        # not over all params including inherited from parent nodes but only over personal
-        for param_name, param_class in cls.get_collectible_class().get_local_params().iteritems():
-            if issubclass(param_class, PkParam):
-                return param_name, param_class
-        raise ApiStructureError(u'Could not found PkParam in collectible %s for collection %s' % (cls.get_collectible_class(), cls))
-
     def iter_collectible_nodes(self):
         collectible_class = self.get_collectible_class()
-        param_name, param_class = self.get_collectible_pk_param()
+        param_name, param_class = self.get_collectible_pk_param()  # FIXME_PARAM
         for obj in self.get_list():
             param_values = self.param_values.copy()
             param_values[param_name] = obj.pk
@@ -55,8 +46,6 @@ class DjangoCollection(Collection):
 
 
 class Collectible(Resource):
-    resource_param = PkParam
-
     @classmethod
     def get_url_argument_name(cls):
         return '%s_pk' % cls.name
@@ -65,12 +54,6 @@ class Collectible(Resource):
     def get_path(cls):
         return cls.resource_param.get_path(cls)
     
-    @classmethod
-    def get_local_params(cls):
-        params = super(Collectible, cls).get_local_params()
-        params[cls.get_url_argument_name()] = cls.resource_param
-        return params
-
     # TODO: decouple django-related stuff
     def get_queryset(self):
         if self.parent is None:
@@ -78,4 +61,4 @@ class Collectible(Resource):
         return self.parent.get_queryset()
 
     def get_object(self):
-        return self.get_queryset().get(pk=self.param_values[self.get_url_argument_name()])
+        return self.get_queryset().get(pk=self.param_values[self.get_url_argument_name()])  #FIXME_PARAM

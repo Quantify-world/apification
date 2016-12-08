@@ -34,7 +34,7 @@ class instancevisible(object):
         >>> A.func()
         'A'
 
-        Property case
+        Property case:
         >>> class Metaclass(instancevisible.Meta):
         ...     @instancevisible
         ...     @property

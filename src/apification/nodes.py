@@ -36,15 +36,24 @@ class ApiNodeMetaclass(instancevisible.Meta):
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
         # Initializing internal class attributes
 
-        for node_name, node_class in ret.iter_children():
-            node_class.parent_class = ret
-            if not node_class.name:
-                node_class.name = node_name.lower()
+        for attr_name in dir(ret):
+            if (attr_name == 'parent_class' or attr_name.startswith('_')):
+                continue
+
+            node_class = getattr(cls, attr_name)
+            if (type(node_class) is cls.__metaclass__):  # issubclass(node, ApiNode) # we can't reference ApiNode before class creation):
+                ret.add_child_class(attr_name, node_class)
         return ret
 
     def __init__(cls, name, parents, dct):
         cls._serializers_preparations = None
+        cls._children = []
         cls.prepare_serializers()
+
+    def add_child_class(cls, name, node_class):
+        node_class.name = name
+        node_class.parent_class = cls
+        cls._children.append(node_class)
 
     @property
     def urls(cls):
@@ -70,16 +79,12 @@ class ApiNodeMetaclass(instancevisible.Meta):
         return cls._strval
 
     @instancevisible
-    def get_name(cls):
-        return cls.name or cls.__name__.lower()  # for root node
-
-    @instancevisible
     @property
     def parent(self):
         if self.__class__.parent_class is None:
             return None
         if not hasattr(self, '_parent'):
-            self._parent = self.__class__.parent_class.from_request(self.request, self.args, self.kwargs)
+            self._parent = self.__class__.parent_class(self.request, self.args, self.kwargs)
         return self._parent
 
     @instancevisible
@@ -98,14 +103,8 @@ class ApiNodeMetaclass(instancevisible.Meta):
                 raise ApiStructureError("Serializer for %s must be Serializer subclass or string, not %s" % (cls, type(value)))
 
     @instancevisible
-    def iter_children(cls):
-        for attr_name in dir(cls):
-            if (attr_name == 'parent_class' or attr_name.startswith('_')):
-                continue
-
-            node = getattr(cls, attr_name)
-            if (type(node) is cls.__metaclass__):  # issubclass(node, ApiNode) # we can't reference ApiNode before class creation):
-                yield attr_name, node
+    def iter_class_children(cls):
+        return iter(cls._children)
 
     @instancevisible
     def get_root_class(cls):
@@ -118,8 +117,7 @@ class ApiNodeMetaclass(instancevisible.Meta):
             node_class = node_class.parent_class
         return node_class
 
-    @instancevisible
-    def render(cls, data):
+    def render(self, data):
         from apification.renderers import JSONRenderer
         data = JSONRenderer().render(data)
         return HttpResponse(data)
@@ -127,6 +125,7 @@ class ApiNodeMetaclass(instancevisible.Meta):
 
 class NoInstance(object):
     class __metaclass__(type):
+        @instancevisible
         def __nonzero__(self):
             return False
 
@@ -163,13 +162,21 @@ class ApiNode(object):
 
     def serialize(self, serializer_name='default_serializer'):
         serializer_class = getattr(self, serializer_name)
-        return serializer_class.from_object(self.instance, node=self)
+        return serializer_class.from_object(node=self)
 
 
 class ApiBranch(ApiNode):
     @classmethod
+    def construct_path(cls):
+        path = ''
+        if cls.parent_class:
+            path += cls.parent_class.construct_path()
+        path += cls.get_path()
+        return path
+
+    @classmethod
     def get_path(cls):
-        return cls.get_name() + '/'
+        return cls.name.lower() + '/'
 
     @classmethod
     def entrypoint(cls, request, *args, **kwargs):
@@ -180,31 +187,23 @@ class ApiBranch(ApiNode):
         else:
             raise HttpResponseNotAllowed()
 
-        action = action_class.from_request(request, args, kwargs)
+        action = action_class(request, args, kwargs)
         return action.run()
 
     @classmethod
     def iter_actions(cls):
-        for attr_name in dir(cls):
-            attr = getattr(cls, attr_name)
-            if issubclass(attr, ApiLeaf):
-                yield attr
+        for child in cls.iter_class_children():
+            if issubclass(child, ApiLeaf):
+                yield child
 
     @classmethod
     def get_urls(cls):
         urls = []
-        for node_name, node in cls.iter_children():
+        for node in cls.iter_class_children():
             urls.extend(node.urls)
         return urls
 
-    @classmethod
-    def construct_path(cls):
-        path = ''
-        if cls.parent_class:
-            path += cls.parent_class.construct_path()
-        path += cls.get_path()
-        return path
-
 
 class ApiLeaf(ApiNode):
-    pass
+    def make_instance(self):
+        return None  # actions do not require any particular instances

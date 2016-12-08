@@ -10,13 +10,6 @@ class Action(ApiLeaf):
     deserializer = 'default_deserializer'
 
     @classmethod
-    def get_method_and_name(cls):
-        if cls.get_name().upper() in api_settings.VALID_HTTP_METHODS:
-            return cls.get_name(), ''
-        else:
-            return cls.method, '%s/' % cls.get_name()
-
-    @classmethod
     def prepare_serializers(cls):
         from apification.serializers import Serializer
         if isinstance(cls.serializer, type) and issubclass(cls.serializer, Serializer):
@@ -28,20 +21,34 @@ class Action(ApiLeaf):
             pass  # TODO: raise warning
 
     @classmethod
+    def get_suffix(cls):
+        if hasattr(cls, 'suffix'):
+            return u'%s/' % cls.suffix.rstrip('/')
+        if cls.name.upper() in api_settings.VALID_HTTP_METHODS:
+            return ''
+        else:
+            return '%s/' % cls.name.lower()
+
+    @classmethod
+    def get_view_name(cls):
+        if hasattr(cls, 'view_name'):
+            return cls.view_name
+        return '%s-%s' % (cls.parent_class.name.lower(), cls.name.lower())
+
+    @classmethod
     def get_urls(cls):
-        method, action_name = cls.get_method_and_name()
-        path = r'%s%s$' % (cls.parent_class.construct_path(), action_name)
+        path = r'%s%s$' % (cls.parent_class.construct_path(), cls.get_suffix())
 
-        return [url(path, cls.parent_class.entrypoint, name='%s-%s' % (cls.parent_class.get_name(), cls.get_name()))]
+        return [url(path, cls.parent_class.entrypoint, name=cls.get_view_name())]
 
-    def process(self, obj):
-        return obj
+    def process(self, node):
+        return node
 
     def run(self):
-        obj = self.parent.get_object()
-        obj = self.process(obj)
-        data = self.serialize(obj, serializer_name='serializer')
-        return self.render(data)
+        node = self.parent
+        node = self.process(node)
+        data = node.serialize(serializer_name='serializer')
+        return self.render(data)    
 
     def get_deserializer(self):
         pass
@@ -55,6 +62,7 @@ class PayloadAction(Action):
         
     def run(self):
         obj = self.deserialize()
-        obj = self.process(obj)
+        node = self.parent_class(self.request, self.args, self.kwargs, instance=obj)
+        node = self.process(node)
         data = self.serialize(obj, serializer_name='serializer')
         return self.render(data)

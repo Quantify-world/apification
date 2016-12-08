@@ -16,7 +16,7 @@ class SerializerBail(list):
         self.add(attr_name=self.node_class.serializer, mapping={self.node_class: 'serializer'})
 
     def iter_sb_children(self):
-        for attr_name, subnode_class in self.node_class.iter_children():
+        for subnode_class in self.node_class.iter_class_children():
             for attr_name, mapping in subnode_class._serializers_preparations or ():
                 yield (attr_name, mapping)
 
@@ -34,20 +34,22 @@ class ApiNodeMetaclass(instancevisible.Meta):
 
     def __new__(cls, name, parents, dct):
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
-        # Initializing internal class attributes
+        ret._children = []  # not in __init__ because will be used here
 
-        for attr_name in dir(ret):
-            if (attr_name == 'parent_class' or attr_name.startswith('_')):
-                continue
-
-            node_class = getattr(cls, attr_name)
-            if (type(node_class) is cls.__metaclass__):  # issubclass(node, ApiNode) # we can't reference ApiNode before class creation):
-                ret.add_child_class(attr_name, node_class)
+        for asc in ret.mro():
+            for attr_name, node_class in asc.__dict__.iteritems():
+                if (attr_name == 'parent_class' or attr_name.startswith('_')):
+                    continue
+    
+                if (type(node_class) is ret.__metaclass__):  # issubclass(node, ApiNode) # we can't reference ApiNode before class creation):
+                    if asc is ret:  # current class
+                        ret.add_child_class(attr_name, node_class)
+                    else:
+                        raise ApiStructureError(u'Class %s has parent class %s with defined child node %s.' % (ret, asc, node_class))
         return ret
 
     def __init__(cls, name, parents, dct):
         cls._serializers_preparations = None
-        cls._children = []
         cls.prepare_serializers()
 
     def add_child_class(cls, name, node_class):
@@ -115,6 +117,7 @@ class ApiNodeMetaclass(instancevisible.Meta):
                 raise ApiStructureError(u"API tree is not actually tree: loop found at %s" % node_class)
             seen.add(node_class)
             node_class = node_class.parent_class
+        node_class.name = node_class.__name__  # root element has no parent, so set name here
         return node_class
 
     def render(self, data):

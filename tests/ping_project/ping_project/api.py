@@ -1,7 +1,7 @@
 from apification.actions import Action, PayloadAction
 from apification.resources import Resource
 from apification.resource_collections import Collection, Collectible
-from apification.serializers import ListSerializer, Serializer
+from apification.serializers import ListSerializer, Serializer, List
 from apification.deserializers import Deserializer
 
 from ping_project.ping import Host
@@ -14,9 +14,12 @@ class Comment:
 class HostSerializer(Serializer):
     pass
 
-    
+
 class HostCollectionSerializer(ListSerializer):
-    pass
+    result = List(
+        link='HostSerializer',
+        node_generator='get_children_nodes'
+    )
 
 
 class PingSerializer(Serializer):

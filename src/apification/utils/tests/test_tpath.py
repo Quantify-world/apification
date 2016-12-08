@@ -14,10 +14,7 @@ class A(ApiNode):
 
 
 def test_tpath_forward():
-    result = tpath.parse(A.B2, '/.//')
-    print 'Res:', result
+    result = tpath.parse(A.B2, '/A')
     
-    # assert len(result) == 1
-    # assert result[0] == A
-
-test_tpath_forward()
+    assert len(result) == 1
+    assert result[0] == A

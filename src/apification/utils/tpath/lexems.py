@@ -44,6 +44,8 @@ class DoubleDot(BaseLexem):
     pattern = r'\.\.'
 
     def resolve(self, iterator):
+        if iterator is None:
+            return
         for node in iterator:
             parent = self.parser.get_parent(node)
             if parent is not None:
@@ -59,6 +61,8 @@ class NodeName(BaseLexem):
         return u'<node name(%s)>' % self.token
 
     def resolve(self, iterator):
+        if iterator is None:
+            return
         def f(node):
             return self.parser.get_name(node) == self.token
         return ifilter(f, iterator)

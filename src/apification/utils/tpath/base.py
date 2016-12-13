@@ -92,7 +92,7 @@ class TPathResolver(object):
         iterator = None
         for lex in expression_list:
             if isinstance(lex, basestring):
-                raise ValueError(u'Unable to parse expression "%s"' % expression)
+                raise TPathError(u'Unable to parse expression "%s"' % expression)
             iterator = lex.resolve(iterator)
 
         if iterator is None:

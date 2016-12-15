@@ -1,6 +1,6 @@
 from apification.nodes import ApiNode
 from apification.utils import tpath
-from apification.utils.xpath_reference import make_result, get_xpath_data
+from apification.utils.xpath_reference import make_result, get_xpath_data, nested_classes_to_xml
 
 
 class A(ApiNode):
@@ -25,7 +25,7 @@ def test_against_xpath():
     def func(node, expr):
         return tpath.parse(node, expr)
     tpath_data = make_result(A, func=func, exc=tpath.TPathError)
-    xpath_data = get_xpath_data()
+    xpath_data = get_xpath_data(nested_classes_to_xml(A))
 
     diff = []
 

@@ -2,6 +2,7 @@
 
 import itertools
 from lxml import etree
+from inspect import isclass
 
 LEXEMS = ('/', '//', '.', '..', '*', 'A', 'B1', 'C')
 LEXEMS_NUM = 3
@@ -53,8 +54,8 @@ def get_full_name(node):
     return '.'.join(reversed(full_name))
 
 
-def get_xpath_data():
-    root = etree.fromstring(XML_TREE)
+def get_xpath_data(xml_tree):
+    root = etree.fromstring(xml_tree)
     
     root_A = root
     # B1, B2 =  root_A.getchildren()
@@ -80,8 +81,27 @@ def print_result(data):
             print 'Fail: \t%s \t %s' % (expr, result)
 
 
+def nested_classes_to_xml(cls, seen=None):
+    if not isclass(cls):
+        raise ValueError(u'class expected, but %s given' % type(cls))
+    if seen is None:
+        seen = []
+    name = cls.__name__
+    subxml = []
+
+    for attr_name in dir(cls):
+        if not attr_name.startswith('__'):
+            attr_value = getattr(cls, attr_name)
+            if attr_value in seen:
+                raise ValueError(u'nested classes with recoursive ierarchy can not be converted to XML (...%s.%s links to %s creating a loop)' % (cls, attr_name, attr_value))
+            if isclass(attr_value):
+               subxml.append(nested_classes_to_xml(attr_value, seen=seen+[cls]))
+
+    return '<%s/>' % name if not subxml else '<%s>%s</%s>' % (name, ''.join(subxml), name)
+
+
 def main():
-    data = get_xpath_data()
+    data = get_xpath_data(XML_TREE)
     print_result(data)
     
 if __name__ == '__main__':

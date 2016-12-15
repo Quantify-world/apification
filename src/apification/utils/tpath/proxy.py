@@ -54,7 +54,7 @@ class RootableProxyMixin(ProxyNode):
 
     def iter_children(cls, node):
         if node is VirtualRoot:
-            return iter([cls._get_implementation().get_root(node)])
+            return iter([cls._get_implementation().get_root(node)])  # Lose noe FIXME!!!!!!
         else:
             return cls._get_implementation().iter_children(node)
 

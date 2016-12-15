@@ -69,7 +69,7 @@ class TPathParser(object):
         parser = cls()
 
         expression_list = [expression]
-        for lex_class in parser.lexem_classes:
+        for lex_class in parser.separator_classes + parser.lexem_classes:
             offset = 0
             for i, elem in enumerate(expression_list[:]):
                 if isinstance(elem, basestring):

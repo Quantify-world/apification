@@ -73,11 +73,11 @@ class ApiNodeMetaclass(instancevisible.Meta):
                 node = node.parent_class
                 i += 1
             if i == N:
-                s = ' ...%s' % s
+                s = '...%s' % s
             else:
-                s = '.%s' % s
+                s = '%s' % s
         
-            cls._strval = '%s%s' % (node.__module__, s)
+            cls._strval = s
         return cls._strval
 
     @instancevisible

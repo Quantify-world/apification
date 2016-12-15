@@ -1,5 +1,4 @@
 import re
-from itertools import chain
 
 
 class TPathError(Exception):
@@ -21,6 +20,7 @@ class BaseLexem(object):
     def __init__(self, parser, node, token):
         self.node = node
         self.parser = parser
+        self.proxy = self.parser.proxy
         self.token = token
 
     def __repr__(self):
@@ -30,14 +30,32 @@ class BaseLexem(object):
         raise NotImplementedError()
 
 
-class TPathResolverMetaclass(type):
+class TPathParserMetaclass(type):
+    def __new__(cls, cls_name, cls_parents, cls_dict):
+        from apification.utils.tpath.proxy import RootableProxyMixin
+
+        if 'proxy' in cls_dict and cls_dict['proxy'] is not NotImplemented:
+            cls_dict['proxy'] = RootableProxyMixin.make_rootable(cls_dict['proxy'])
+
+        ret = super(TPathParserMetaclass, cls).__new__(cls, cls_name, cls_parents, cls_dict)
+        return ret
+
     def __init__(cls, *args, **kwargs):
-        super(TPathResolverMetaclass, cls).__init__(*args, **kwargs)
+        super(TPathParserMetaclass, cls).__init__(*args, **kwargs)
+        cls.separator_classes = getattr(cls, 'separator_classes', [])[:]
         cls.lexem_classes = getattr(cls, 'lexem_classes', [])[:]
 
 
-class TPathResolver(object):
-    __metaclass__ = TPathResolverMetaclass
+class TPathParser(object):
+    __metaclass__ = TPathParserMetaclass
+    proxy = NotImplemented
+
+    @classmethod
+    def separator(cls, separator_class):
+        if separator_class not in cls.separator_classes:
+            cls.separator_classes.append(separator_class)
+            cls.separator_classes.sort(key=lambda x: -x.priority)
+        return separator_class
 
     @classmethod
     def lexem(cls, lexem_class):
@@ -45,25 +63,6 @@ class TPathResolver(object):
             cls.lexem_classes.append(lexem_class)
             cls.lexem_classes.sort(key=lambda x: -x.priority)
         return lexem_class
-
-    def get_name(self, node):
-        raise NotImplementedError()
-
-    def get_root(self, node):
-        raise NotImplementedError()
-
-    def iter_children(self, node):
-        raise NotImplementedError()
-
-    def get_child(self, node, name):
-        raise NotImplementedError()
-
-    def get_parent(self, node):
-        raise NotImplementedError()
-
-    def walk_subtree(self, node):
-        sub = [self.walk_subtree(subnode) for subnode in self.iter_children(node)]
-        return chain([node], *sub)
 
     @classmethod
     def parse(cls, node, expression):
@@ -99,5 +98,6 @@ class TPathResolver(object):
             return [node]
         else:
             return list(iterator)
+
 
 __import__('apification.utils.tpath.lexems')

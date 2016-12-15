@@ -1,40 +1,28 @@
-from itertools import chain, ifilter
-from apification.utils.tpath.base import TPathError, TPathResolver
+from apification.utils.tpath.base import TPathError, TPathParser
+from apification.utils.tpath.proxy import ProxyNode, VirtualRoot
 
 
-class ApiTreeTPathResolver(TPathResolver):
-    def get_name(self, node):
+class ApiTreeProxy(ProxyNode):
+    def get_name(cls, node):
         return node.name
 
-    def get_root(self, node):
+    def get_root(cls, node):
         return node.get_root_class()
 
-    def iter_children(self, node):
+    def iter_children(cls, node):
         return node.iter_class_children()
 
-    def get_child(self, node, name):
+    def get_child(cls, node, name):
         try:
             return getattr(node, name)
         except AttributeError:
             raise TPathError()
 
-    def get_parent(self, node):
+    def get_parent(cls, node):
+        if node.parent_class is None:
+            return VirtualRoot
         return node.parent_class
 
 
-
-
-def parse_expression(expr, node):
-    lexems = []
-    for lex in lexems:
-        lex.resolve()
-
-
-def process_lexems(lexems, node):
-    if not lexems:
-        return node
-    new_node = lexems[0].resolve()
-    return process_lexems(lexems[1:], new_node)
-    
-
-
+class TPathApiTreeParser(TPathParser):
+    proxy = ApiTreeProxy

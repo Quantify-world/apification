@@ -1,35 +1,35 @@
-from itertools import chain, ifilter
+from itertools import chain
 
-from apification.utils.tpath.base import TPathResolver, BaseLexem
+from apification.utils.tpath.base import TPathParser, BaseLexem
 
 
-@TPathResolver.lexem
-class Slash(BaseLexem):
+@TPathParser.separator
+class SlashSeparator(BaseLexem):
     pattern = r'/'
 
-    def resolve(self, iterator):
+    def resolve(self, iterator=None):
+        from apification.utils.tpath.proxy import VirtualRoot
+
         if iterator is None:
-            yield self.parser.get_root(self.node)
+            yield VirtualRoot
             return
-
-        for node in iterator:
-            for subnode in self.parser.iter_children(node):
-                yield subnode
+        for i in iterator:
+            yield i
 
 
-@TPathResolver.lexem
-class DoubleSlash(BaseLexem):
+@TPathParser.separator
+class DoubleSlashSeparator(BaseLexem):
     pattern = r'//'
     priority = 200  # before Slash
     
     def resolve(self, iterator):
+        from apification.utils.tpath.proxy import VirtualRoot
         if iterator is None:
-            root = self.parser.get_root(self.node)
-            return self.resolve(iter([root]))
-        return chain(*[ifilter(lambda x: x!=i, self.parser.walk_subtree(i)) for i in iterator])
+            iterator = iter([VirtualRoot])
+        return chain(*[self.proxy.walk_subtree(i) for i in iterator])
 
 
-@TPathResolver.lexem
+@TPathParser.lexem
 class Dot(BaseLexem):
     pattern = r'\.'
 
@@ -39,7 +39,7 @@ class Dot(BaseLexem):
         return iterator
 
 
-@TPathResolver.lexem
+@TPathParser.lexem
 class DoubleDot(BaseLexem):
     pattern = r'\.\.'
 
@@ -47,12 +47,12 @@ class DoubleDot(BaseLexem):
         if iterator is None:
             return
         for node in iterator:
-            parent = self.parser.get_parent(node)
+            parent = self.proxy.get_parent(node)
             if parent is not None:
                 yield parent
 
 
-@TPathResolver.lexem
+@TPathParser.lexem
 class NodeName(BaseLexem):
     pattern = r'[a-zA-Z_][a-zA-Z_0-9]*'
     priority = 10
@@ -62,7 +62,23 @@ class NodeName(BaseLexem):
 
     def resolve(self, iterator):
         if iterator is None:
-            return
-        def f(node):
-            return self.parser.get_name(node) == self.token
-        return ifilter(f, iterator)
+            iterator = iter([self.node])
+
+        for node in iterator:
+            for subnode in self.proxy.iter_children(node):
+                if self.token == self.proxy.get_name(subnode):
+                    yield subnode
+
+
+@TPathParser.lexem
+class Asterisk(BaseLexem):
+    pattern = r'\*'
+    priority = 10
+
+    def resolve(self, iterator):
+        if iterator is None:
+            iterator = iter([self.node])
+
+        for node in iterator:
+            for subnode in self.proxy.iter_children(node):
+                yield subnode

@@ -1,30 +1,32 @@
 import itertools
 
-from apification.utils.noninstantiable import Noninstantiable
+from apification.utils.noninstantiable import NoninstantiableMeta, Noninstantiable
 
 
-class VirtualRoot(Noninstantiable):
-    pass
+class VirtualRoot(object):
+    class __metaclass__(NoninstantiableMeta):
+        def __str__(cls):
+            return u'#document'
 
 
 class ProxyNode(Noninstantiable):
     def get_name(cls, node):
         raise NotImplementedError()
 
-    def get_root(cls, node):
+    def get_root(cls, context_node, node):
         raise NotImplementedError()
 
-    def iter_children(cls, node):
+    def iter_children(cls, context_node, node):
         raise NotImplementedError()
 
-    def get_child(cls, node, name):
+    def get_child(cls, context_node, node, name):
         raise NotImplementedError()
 
-    def get_parent(cls, node):
+    def get_parent(cls, context_node, node):
         raise NotImplementedError()
 
-    def walk_subtree(cls, node):
-        sub = [cls.walk_subtree(subnode) for subnode in cls.iter_children(node)]
+    def walk_subtree(cls, context_node, node):
+        sub = [cls.walk_subtree(context_node, subnode) for subnode in cls.iter_children(context_node, node)]
         return itertools.chain([node], *sub)
 
 
@@ -52,16 +54,16 @@ class RootableProxyMixin(ProxyNode):
         else:
             return cls._get_implementation().get_name(node)
 
-    def iter_children(cls, node):
+    def iter_children(cls, context_node, node):
         if node is VirtualRoot:
-            return iter([cls._get_implementation().get_root(node)])  # Lose noe FIXME!!!!!!
+            return iter([cls._get_implementation().get_root(context_node, context_node)])
         else:
-            return cls._get_implementation().iter_children(node)
+            return cls._get_implementation().iter_children(context_node, node)
 
-    def get_child(cls, node, name):
+    def get_child(cls, context_node, node, name):
         from apification.utils.tpath import TPathError
         if node is VirtualRoot:
-            root = cls._get_implementation().get_root(node)
+            root = cls._get_implementation().get_root(context_node, context_node)
             root_name = cls._get_implementation().get_name()
     
             if root_name == name:
@@ -69,10 +71,10 @@ class RootableProxyMixin(ProxyNode):
             else:
                 raise TPathError()
         else:
-            return cls._get_implementation().get_child(node, name)
+            return cls._get_implementation().get_child(context_node, node, name)
 
-    def get_parent(cls, node):
+    def get_parent(cls, context_node, node):
         if node is VirtualRoot:
             return None
         else:
-            return cls._get_implementation().get_parent(node)
+            return cls._get_implementation().get_parent(context_node, node)

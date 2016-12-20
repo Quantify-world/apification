@@ -26,7 +26,7 @@ class DoubleSlashSeparator(BaseLexem):
         from apification.utils.tpath.proxy import VirtualRoot
         if iterator is None:
             iterator = iter([VirtualRoot])
-        return chain(*[self.proxy.walk_subtree(i) for i in iterator])
+        return chain(*[self.proxy.walk_subtree(self.node, i) for i in iterator])
 
 
 @TPathParser.lexem
@@ -42,12 +42,13 @@ class Dot(BaseLexem):
 @TPathParser.lexem
 class DoubleDot(BaseLexem):
     pattern = r'\.\.'
+    priority = 200
 
     def resolve(self, iterator):
         if iterator is None:
-            return
+            iterator = iter([self.node])
         for node in iterator:
-            parent = self.proxy.get_parent(node)
+            parent = self.proxy.get_parent(self.node, node)
             if parent is not None:
                 yield parent
 
@@ -65,7 +66,7 @@ class NodeName(BaseLexem):
             iterator = iter([self.node])
 
         for node in iterator:
-            for subnode in self.proxy.iter_children(node):
+            for subnode in self.proxy.iter_children(self.node, node):
                 if self.token == self.proxy.get_name(subnode):
                     yield subnode
 
@@ -80,5 +81,5 @@ class Asterisk(BaseLexem):
             iterator = iter([self.node])
 
         for node in iterator:
-            for subnode in self.proxy.iter_children(node):
+            for subnode in self.proxy.iter_children(self.node, node):
                 yield subnode

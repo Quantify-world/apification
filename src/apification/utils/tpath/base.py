@@ -1,4 +1,5 @@
 import re
+import itertools
 
 
 class TPathError(Exception):
@@ -66,6 +67,8 @@ class TPathParser(object):
 
     @classmethod
     def parse(cls, node, expression):
+        from apification.utils.tpath.proxy import VirtualRoot
+
         parser = cls()
 
         expression_list = [expression]
@@ -97,7 +100,11 @@ class TPathParser(object):
         if iterator is None:
             return [node]
         else:
-            return list(iterator)
+            result = []
+            for i in iterator:
+                if i is not VirtualRoot and i not in result:
+                    result.append(i)
+            return result
 
 
 __import__('apification.utils.tpath.lexems')

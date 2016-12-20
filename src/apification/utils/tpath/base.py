@@ -120,25 +120,6 @@ class TPathParser(object):
             else:
                 raise TPathError(u'Unable to parse "%s" part of "%s" expression' % (expr, expression))
 
-        # for lex_class in parser.separator_classes + parser.lexem_classes:
-        #     offset = 0
-        #     for i, elem in enumerate(expression_list[:]):
-        #         if isinstance(elem, basestring):
-        #             found = []
-        #             for m in re.finditer(lex_class.pattern, elem):
-        #                 found.append((m, lex_class(parser, node, m.group(0))))
-        #             replacement = []
-        #             pos = 0
-        #             for m, lex in found:
-        #                 replacement.append(elem[pos:m.start()])
-        #                 replacement.append(lex)
-        #                 pos = m.end()
-        #             replacement.append(elem[pos:])
-        #             replacement = filter(lambda x: x != '', replacement)
-        # 
-        #             expression_list[i+offset:i+offset+1] = replacement
-        #             offset = len(replacement) - 1
-
         iterator = None
         for lex in expression_list:
             if isinstance(lex, basestring):

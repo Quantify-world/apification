@@ -118,22 +118,3 @@ class XPathClassTreeGenerator(XPathReferrenceGenerator):
         xml_root = etree.Element(root.__name__)
         create_nodes(root, xml_root)
         return xml_root
-
-
-# def nested_classes_to_xml(cls, seen=None):
-#     if not isclass(cls):
-#         raise ValueError(u'class expected, but %s given' % type(cls))
-#     if seen is None:
-#         seen = []
-#     name = cls.__name__
-#     subxml = []
-# 
-#     for attr_name in dir(cls):
-#         if not attr_name.startswith('__'):
-#             attr_value = getattr(cls, attr_name)
-#             if attr_value in seen:
-#                 raise ValueError(u'nested classes with recoursive ierarchy can not be converted to XML (...%s.%s links to %s creating a loop)' % (cls, attr_name, attr_value))
-#             if isclass(attr_value):
-#                 subxml.append(nested_classes_to_xml(attr_value, seen=seen+[cls]))
-# 
-#     return '<%s/>' % name if not subxml else '<%s>%s</%s>' % (name, ''.join(subxml), name)

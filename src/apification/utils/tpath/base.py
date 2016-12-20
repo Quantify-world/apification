@@ -1,5 +1,4 @@
 import re
-import itertools
 
 
 class TPathError(Exception):
@@ -29,6 +28,10 @@ class BaseLexem(object):
 
     def resolve(self, iterator=None):
         raise NotImplementedError()
+
+
+class BaseSeparator(BaseLexem):
+    pass
 
 
 class TPathParserMetaclass(type):
@@ -69,27 +72,72 @@ class TPathParser(object):
     def parse(cls, node, expression):
         from apification.utils.tpath.proxy import VirtualRoot
 
+        def is_match_only(pattern, text):
+            match = (tuple(pattern.finditer(text)) or (None, ))[0]
+            if match is None:
+                return False
+            return match.end() - match.start() == len(text)
+
         parser = cls()
 
-        expression_list = [expression]
-        for lex_class in parser.separator_classes + parser.lexem_classes:
-            offset = 0
-            for i, elem in enumerate(expression_list[:]):
-                if isinstance(elem, basestring):
-                    found = []
-                    for m in re.finditer(lex_class.pattern, elem):
-                        found.append((m, lex_class(parser, node, m.group(0))))
-                    replacement = []
-                    pos = 0
-                    for m, lex in found:
-                        replacement.append(elem[pos:m.start()])
-                        replacement.append(lex)
-                        pos = m.end()
-                    replacement.append(elem[pos:])
-                    replacement = filter(lambda x: x != '', replacement)
+        if not expression:
+            raise TPathError(u'Empty expression')
 
-                    expression_list[i+offset:i+offset+1] = replacement
-                    offset = len(replacement) - 1
+        expression_list = []
+
+        # splitting with separators
+        separator_pattern = re.compile(u'|'.join(i.pattern.pattern for i in parser.separator_classes))
+        pos = 0
+        for m in separator_pattern.finditer(expression):
+            if pos != m.start():  # non-empty string between separators
+                expression_list.append(expression[pos:m.start()])
+            elif expression_list:
+                raise TPathError(u'Multiple separators in a row in "%s"' % expression)
+
+            for sep in parser.separator_classes:
+                if is_match_only(sep.pattern, m.group()):
+                    expression_list.append(sep(parser, node, m.group()))
+                    break
+            else:
+                raise AssertionError(u'Separator pattern not found in previously matched string')
+            pos = m.end()
+
+        if pos != len(expression):  # last string part
+            expression_list.append(expression[pos:])
+        elif expression != '/':  # special case
+            assert expression_list and isinstance(expression_list[-1], BaseSeparator)
+            raise TPathError(u'Trailing separators not allowed')
+
+        # looking for internal lexems
+        for i, expr in enumerate(expression_list[:]):
+            if isinstance(expr, BaseSeparator):
+                continue
+
+            for lex in parser.lexem_classes:
+                if is_match_only(lex.pattern, expr):
+                    expression_list[i] = lex(parser, node, expr)
+                    break
+            else:
+                raise TPathError(u'Unable to parse "%s" part of "%s" expression' % (expr, expression))
+
+        # for lex_class in parser.separator_classes + parser.lexem_classes:
+        #     offset = 0
+        #     for i, elem in enumerate(expression_list[:]):
+        #         if isinstance(elem, basestring):
+        #             found = []
+        #             for m in re.finditer(lex_class.pattern, elem):
+        #                 found.append((m, lex_class(parser, node, m.group(0))))
+        #             replacement = []
+        #             pos = 0
+        #             for m, lex in found:
+        #                 replacement.append(elem[pos:m.start()])
+        #                 replacement.append(lex)
+        #                 pos = m.end()
+        #             replacement.append(elem[pos:])
+        #             replacement = filter(lambda x: x != '', replacement)
+        # 
+        #             expression_list[i+offset:i+offset+1] = replacement
+        #             offset = len(replacement) - 1
 
         iterator = None
         for lex in expression_list:

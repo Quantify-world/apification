@@ -6,7 +6,7 @@ from lxml import etree
 
 class XPathReferrenceGenerator(object):
     LEXEMS = ('/', '//', '.', '..', '*', 'A', 'B1', 'C')
-    LEXEMS_NUM = 3
+    LEXEMS_NUM = 4
     catched_exception = etree.XPathEvalError
 
     def __init__(self):
@@ -43,9 +43,22 @@ class XPathReferrenceGenerator(object):
     def eval_expr(self, node, expr):
         return node.xpath(expr)
 
+    def exclude_expression(self, expr):
+        return (
+            expr.startswith('///')  # ambiguous expression - skip it
+            or expr in ('.//.', '././/.', './/./.', './/.//.')  # lxml implementation seems to be different from spec
+            or expr in ('/.//.', '/.//./.', '/././/.', '/.//.//.')  #  lxml seems to lose results here
+        )
+
     def generate_expressions(self):
-        for item in itertools.permutations(self.LEXEMS, self.LEXEMS_NUM):
-            yield ''.join(item)
+        for i in xrange(self.LEXEMS_NUM):
+            for comb in itertools.combinations_with_replacement(self.LEXEMS, i+1):
+                seen = []
+                for item in itertools.permutations(comb):
+                    expr = ''.join(item)
+                    if not self.exclude_expression(expr) and expr not in seen:
+                        seen.append(expr)
+                        yield expr
 
     def make_result(self, node):
         for expr in self.generate_expressions():

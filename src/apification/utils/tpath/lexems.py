@@ -1,10 +1,10 @@
 from itertools import chain
 
-from apification.utils.tpath.base import TPathParser, BaseLexem
+from apification.utils.tpath.base import TPathParser, BaseLexem, BaseSeparator
 
 
 @TPathParser.separator
-class SlashSeparator(BaseLexem):
+class SlashSeparator(BaseSeparator):
     pattern = r'/'
 
     def resolve(self, iterator=None):
@@ -18,7 +18,7 @@ class SlashSeparator(BaseLexem):
 
 
 @TPathParser.separator
-class DoubleSlashSeparator(BaseLexem):
+class DoubleSlashSeparator(BaseSeparator):
     pattern = r'//'
     priority = 200  # before Slash
     
@@ -55,7 +55,7 @@ class DoubleDot(BaseLexem):
 
 @TPathParser.lexem
 class NodeName(BaseLexem):
-    pattern = r'[a-zA-Z_][a-zA-Z_0-9]*'
+    pattern = r'[a-zA-Z_][a-zA-Z_0-9.-]*'
     priority = 10
 
     def __repr__(self):

@@ -3,11 +3,53 @@ from apification.utils import writeonce
 from apification.utils.noninstantiable import NoninstantiableMeta
 from apification import api_settings 
 
+from apification.utils import tpath
+
+
+class SerializierLinkMeta(NoninstantiableMeta):
+    def __call__(cls, node_path, serializer_name, generation_method):
+        cls.node_path = node_path
+        cls.serializer_name = serializer_name
+        cls.generation_method = generation_method
+        return cls
+
+
+class BaseSerializerLink(object):
+    __metaclass__ = SerializierLinkMeta
+    
+    parent_serializer = None  # TODO: fill in Serializer__init__
+
+    def retrieve_serializer(cls):
+        try:
+            node = tpath.parse(cls.parent_serializer.node, cls.node_path)
+        except tpath.TPathError as e:
+            raise ApiStructureError(u'Invalid path "%s": e' % (cls.node_path, e))  # TODO: more verbose message
+        return getattr(node, cls.serializer_name)
+
+    def make_node_instance(cls):  # naming node iter?
+        return cls.generation_method()  # TODO: args?
+
+    def from_serializer(cls):
+        raise NotImplementedError()
+
+
+class SingleSerializerLink(BaseSerializerLink):
+    def from_serializer(cls):
+        return cls.retrieve_serializer().from_object(cls.make_node_instance())
+
+class ListSerializerLink(BaseSerializerLink):
+    def from_serializer(cls):
+        return [cls.retrieve_serializer().from_object(i) for i in cls.make_node_instance()]
+
+class DictSerializerLink(BaseSerializerLink):
+    def from_serializer(cls):
+        return dict((k, cls.retrieve_serializer().from_object(i)) for k, i in cls.make_node_instance())
+
 
 @writeonce(parent_serializer=None, name=None, node_class=None)
-class SerializerMetaclass(NoninstantiableMeta):
+class SerializerMeta(NoninstantiableMeta):
     def __new__(cls, name, parents, dct):
-        ret = super(SerializerMetaclass, cls).__new__(cls, name, parents, dct)
+        ret = super(SerializerMeta, cls).__new__(cls, name, parents, dct)
         for name, sub_serializer in ret:
             sub_serializer.parent_serializer = ret
             if sub_serializer.name is None:
@@ -25,7 +67,7 @@ class SerializerMetaclass(NoninstantiableMeta):
 
 
 class Serializer(object):
-    __metaclass__ = SerializerMetaclass
+    __metaclass__ = SerializerMeta
 
     @classmethod
     def get_backend_registry(cls):
@@ -39,7 +81,7 @@ class Serializer(object):
         return ret
 
     @classmethod
-    def from_object(cls, obj, node):
+    def from_object(cls, obj, node):  # TODO: rework
         node = cls.resolve_node(node)
         ret = cls.from_children(obj, node)
         registry = cls.get_backend_registry()

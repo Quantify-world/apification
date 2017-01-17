@@ -5,7 +5,6 @@ from apification.serializers import Serializer
 from apification.exceptions import ApiStructureError
 from apification.utils import writeonce, instancevisible
 
-
 class SerializerBail(list):
     def __init__(self, node_class):
         super(SerializerBail, self).__init__()
@@ -17,6 +16,7 @@ class SerializerBail(list):
 
     def iter_sb_children(self):
         for subnode_class in self.node_class.iter_class_children():
+            # raise Exception(self.node_class.Host._serializers_preparations)
             for attr_name, mapping in subnode_class._serializers_preparations or ():
                 yield (attr_name, mapping)
 
@@ -49,6 +49,7 @@ class ApiNodeMetaclass(instancevisible.Meta):
         return ret
 
     def __init__(cls, name, parents, dct):
+        super(ApiNodeMetaclass, cls).__init__(name, parents, dct)
         cls._serializers_preparations = None
         cls.prepare_serializers()
 
@@ -90,21 +91,6 @@ class ApiNodeMetaclass(instancevisible.Meta):
         return self._parent
 
     @instancevisible
-    def prepare_serializers(cls):
-        sb = SerializerBail(cls)
-        for attr_name, mapping in sb.iter_sb_children():
-            value = getattr(cls, attr_name, None)  # current class attribute name fetched from children
-            if isinstance(value, type) and issubclass(value, Serializer):  # actual serializer - resolve finished
-                sb.resolve(value, mapping)
-            elif isinstance(value, basestring):  # string - need to look up in hierarchy
-                mapping[cls] = attr_name
-                sb.add(value, mapping)
-            elif value is None:  # skip next level up
-                sb.add(attr_name, mapping)
-            else:  # not suitable type
-                raise ApiStructureError("Serializer for %s must be Serializer subclass or string, not %s" % (cls, type(value)))
-
-    @instancevisible
     def iter_class_children(cls):
         return iter(cls._children)
 
@@ -119,11 +105,6 @@ class ApiNodeMetaclass(instancevisible.Meta):
             node_class = node_class.parent_class
         node_class.name = node_class.__name__  # root element has no parent, so set name here
         return node_class
-
-    def render(self, data):
-        from apification.renderers import JSONRenderer
-        data = JSONRenderer().render(data)
-        return HttpResponse(data)
 
 
 class NoInstance(object):
@@ -148,6 +129,26 @@ class ApiNode(object):
             self.instance = instance
             self.instance_from_request = False
 
+    @classmethod
+    def prepare_serializers(cls):
+        sb = SerializerBail(cls)
+        for attr_name, mapping in sb.iter_sb_children():
+            value = getattr(cls, attr_name, None)  # current class attribute name fetched from children
+            if isinstance(value, type) and issubclass(value, Serializer):  # actual serializer - resolve finished
+                sb.resolve(value, mapping)
+            elif isinstance(value, basestring):  # string - need to look up in hierarchy
+                mapping[cls] = attr_name
+                sb.add(value, mapping)
+            elif value is None:  # skip next level up
+                sb.add(attr_name, mapping)
+            else:  # not suitable type
+                raise ApiStructureError("Serializer for %s must be Serializer subclass or string, not %s" % (cls, type(value)))
+
+    def render(self, data):
+        from apification.renderers import JSONRenderer
+        data = JSONRenderer().render(data)
+        return HttpResponse(data)
+
     def make_instance(self):
         raise NotImplementedError()
 
@@ -163,9 +164,10 @@ class ApiNode(object):
             node = node.parent
             yield node
 
-    def serialize(self, serializer_name='default_serializer'):
-        serializer_class = getattr(self, serializer_name)
-        return serializer_class.from_object(node=self)
+    def serialize(self, serializer=None):
+        if serializer is None:
+            serializer = getattr(self, 'default_serializer')
+        return serializer.from_object(node=self)
 
 
 class ApiBranch(ApiNode):

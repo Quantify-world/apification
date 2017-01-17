@@ -12,11 +12,11 @@ class Action(ApiLeaf):
     @classmethod
     def prepare_serializers(cls):
         from apification.serializers import Serializer
+
         if isinstance(cls.serializer, type) and issubclass(cls.serializer, Serializer):
             cls.serializer.node_class = cls  # set serializer context
         elif isinstance(cls.serializer, basestring):  # string
             SerializerBail(cls).init_action()
-                # [(cls.serializer, {cls: 'serializer'})]
         else:
             pass  # TODO: raise warning
 
@@ -47,8 +47,8 @@ class Action(ApiLeaf):
     def run(self):
         node = self.parent
         node = self.process(node)
-        data = node.serialize(serializer_name='serializer')
-        return self.render(data)    
+        data = node.serialize(serializer=self.serializer)
+        return self.render(data)
 
     def get_deserializer(self):
         pass

@@ -8,13 +8,19 @@ from apification import api_settings
 class SerializerMetaclass(NoninstantiableMeta):
     def __new__(cls, name, parents, dct):
         ret = super(SerializerMetaclass, cls).__new__(cls, name, parents, dct)
-        for name, sub_serializer in ret:
+
+        for attr_name, sub_serializer in cls._iter_with_name():
             sub_serializer.parent_serializer = ret
-            if sub_serializer.name is None:
-                sub_serializer.name = name.lower()
+            assert sub_serializer.name is None
+            sub_serializer.name = attr_name.lower()
+
         return ret
 
     def __iter__(cls):
+        for attr_name, sub_serializer in cls._iter_with_name():
+            yield sub_serializer
+
+    def _iter_with_name(cls):
         for attr_name in dir(cls):
             if (attr_name.startswith('_') or attr_name == 'node_class'):
                 continue
@@ -34,8 +40,8 @@ class Serializer(object):
     @classmethod
     def from_children(cls, obj, node):
         ret = {}
-        for name, sub_serializer in cls:
-            ret[sub_serializer.name or name.lower()] = sub_serializer.from_object(obj, node)
+        for sub_serializer in cls:
+            ret[sub_serializer.name] = sub_serializer.from_object(obj, node)
         return ret
 
     @classmethod

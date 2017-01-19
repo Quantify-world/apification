@@ -4,7 +4,7 @@ from apification.resources import Resource
 from apification.utils import tpath
 
 
-class Collection(ApiBranch):
+class Collection(Resource):
     collectible = './Item'  # tpath of child class which will represent single item of collection
 
     def __iter__(self):

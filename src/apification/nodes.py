@@ -1,9 +1,13 @@
 #-*- coding: utf-8 -*-
+from collections import OrderedDict
+
 from django.http import HttpResponseNotAllowed, HttpResponse
 
 from apification.serializers import Serializer
 from apification.exceptions import ApiStructureError
 from apification.utils import writeonce, instancevisible
+from apification import decorators
+
 
 class SerializerBail(list):
     def __init__(self, node_class):
@@ -33,30 +37,42 @@ class ApiNodeMetaclass(instancevisible.Meta):
     parent_class = writeonce(None, writeonce_msg=u'Duplicate in API tree: %(instance)s already has parent %(old_value)s though %(value)s can not be set as new parent')
 
     def __new__(cls, name, parents, dct):
+        resources = []
+        serializers = []
+        actions = []
+        for name, value in dct.items():
+            if hasattr(value, '_decorated'):
+                if value._decorated == decorators.resource.func_name:
+                    resources.append((name, value))
+                    del dct[name]
+                elif value._decorated == decorators.action.func_name:
+                    actions.append((name, value))
+                    del dct[name]
+                elif value._decorated == decorators.serializer.func_name:
+                    serializers.append((name, value))
+                    del dct[name]
+        resources.sort(key=lambda x: x[1]._index)
+        actions.sort(key=lambda x: x[1]._index)
+        serializers.sort(key=lambda x: x[1]._index)
+        
+        children = actions + resources
+        
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
-        ret._children = []  # not in __init__ because will be used here
+        ret.resources = OrderedDict(resources)
+        ret.actions = OrderedDict(actions)
+        ret.serializers = OrderedDict(serializers)
+        ret.children = OrderedDict(children)
+        
+        for name, node_class in ret.children.iteritems():
+            node_class.name = name
+            node_class.parent_class = ret
 
-        for asc in ret.mro():
-            for attr_name, node_class in asc.__dict__.iteritems():
-                if (attr_name == 'parent_class' or attr_name.startswith('_')):
-                    continue
-    
-                if (type(node_class) is ret.__metaclass__):  # issubclass(node, ApiNode) # we can't reference ApiNode before class creation):
-                    if asc is ret:  # current class
-                        ret.add_child_class(attr_name, node_class)
-                    else:
-                        raise ApiStructureError(u'Class %s has parent class %s with defined child node %s.' % (ret, asc, node_class))
         return ret
 
     def __init__(cls, name, parents, dct):
         super(ApiNodeMetaclass, cls).__init__(name, parents, dct)
         cls._serializers_preparations = None
         cls.prepare_serializers()
-
-    def add_child_class(cls, name, node_class):
-        node_class.name = name
-        node_class.parent_class = cls
-        cls._children.append(node_class)
 
     @property
     def urls(cls):
@@ -92,7 +108,9 @@ class ApiNodeMetaclass(instancevisible.Meta):
 
     @instancevisible
     def iter_class_children(cls):
-        return iter(cls._children)
+        import warnings
+        warnings.warn(u'Use Node.children instead', DeprecationWarning)
+        return cls.children.itervalues()
 
     @instancevisible
     def get_root_class(cls):

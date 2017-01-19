@@ -1,61 +1,48 @@
 from apification.nodes import ApiBranch
-from apification.params import PkParam
 from apification.exceptions import ApiStructureError
 from apification.resources import Resource
+from apification.utils import tpath
 
 
 class Collection(ApiBranch):
-    collectible_child = None  # name of child class which will represent single item of collection
+    collectible = './Item'  # tpath of child class which will represent single item of collection
 
     def __iter__(self):
         return self.iter_collectible_nodes()
 
-    def get_list(self):
-        raise NotImplementedError()
-
-    def get_object(self):
-        return self.get_list()
-
     @classmethod
     def get_collectible_class(cls):
-        if cls.collectible_child is not None:  # collectible child specified
-            return getattr(cls, cls.collectible_child)
-        
-        collectible_class = None
-        for attr_name, node_class in cls.iter_children():
-            if issubclass(node_class, Collectible):
-                if collectible_class is not None:
-                    raise ApiStructureError(
-                        u'Multiple collectable classes in collection %s. Specify "collectible_child" attribute in collection.' % cls)
-                collectible_class = node_class
-        if collectible_class is None:
-            raise ApiStructureError(u'No collectable classes specified in collection %s' % cls)
-        return collectible_class
-
-    @classmethod
-    def get_collectible_pk_param(cls):
-        # not over all params including inherited from parent nodes but only over personal
-        for param_name, param_class in cls.get_collectible_class().get_local_params().iteritems():
-            if issubclass(param_class, PkParam):
-                return param_name, param_class
-        raise ApiStructureError(u'Could not found PkParam in collectible %s for collection %s' % (cls.get_collectible_class(), cls))
+        try:
+            collectible = tpath.parse(cls, cls.collectible)[0]
+            assert issubclass(collectible, Collectible)
+        except (tpath.TPathError, IndexError) as e:
+            raise ApiStructureError(u'Unable to find collectible on path "%s" for collection %s: %s' % (cls.collectible, cls, e))
+        return collectible
 
     def iter_collectible_nodes(self):
         collectible_class = self.get_collectible_class()
-        param_name, param_class = self.get_collectible_pk_param()
         for obj in self.get_list():
-            param_values = self.param_values.copy()
-            param_values[param_name] = obj.pk
-            node = collectible_class(param_values)
+            node = collectible_class(request=self.request, args=self.args, kwargs=self.kwargs, instance=obj)
             yield node
 
+    def get_queryset(self):
+        raise NotImplementedError()
 
-class DjangoCollection(Collection):
-    pass
+    def make_instance(self):
+        return self.get_queryset()
 
 
 class Collectible(Resource):
-    resource_param = PkParam
+    collection = '..'
+
+    @classmethod
+    def get_collection_class(cls):
+        try:
+            collection = tpath.parse(cls, cls.collection)[0]
+            assert issubclass(collection, Collection)
+        except (tpath.TPathError, IndexError) as e:
+            raise ApiStructureError(u'Unable to find collection path "%s" for collectible %s: %s' % (cls.collection, cls, e))
+        return collection
 
     @classmethod
     def get_url_argument_name(cls):
@@ -63,13 +50,7 @@ class Collectible(Resource):
 
     @classmethod
     def get_path(cls):
-        return cls.resource_param.get_path(cls)
-    
-    @classmethod
-    def get_local_params(cls):
-        params = super(Collectible, cls).get_local_params()
-        params[cls.get_url_argument_name()] = cls.resource_param
-        return params
+        return u'/(?P<%s>\d+)/' % cls.get_url_argument_name()
 
     # TODO: decouple django-related stuff
     def get_queryset(self):

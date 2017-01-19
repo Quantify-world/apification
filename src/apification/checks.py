@@ -7,7 +7,7 @@ from apification.serializers import Serializer
 
 def fetch_actions_under(node):
     ret = []
-    for name, subnode in node.iter_children():
+    for subnode in node.iter_class_children():
         if issubclass(subnode, Action):
             ret.append(subnode)
         else:
@@ -45,8 +45,8 @@ def check_actions_are_leafs(actions):  # FIXME: Do we realy need root here?
     errors = []
 
     for action in actions:
-        if tuple(action.iter_children()):  # if at least one child
-            children = map(str, zip(*action.iter_children())[1])
+        if tuple(action.iter_class_children()):  # if at least one child
+            children = map(str, action.iter_class_children())
             errors.append(
                 Error(
                     'Action must have no child nodes, but it have these children: %s' % ', '.join(children),

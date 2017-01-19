@@ -47,3 +47,14 @@ class AllAttributesBackend(BaseSerializerBackend):
             if not isinstance(v, (int, long, float)):
                 ret[k] = unicode(v)
         return ret
+
+
+class IterableBackend(BaseSerializerBackend):
+    @classmethod
+    def run(cls, instance):
+        if not hasattr(instance, '__iter__'):
+            raise SkipBackend()
+        ret = {}
+        if hasattr(instance, '__len__'):
+            ret['length'] = len(instance)
+        return ret

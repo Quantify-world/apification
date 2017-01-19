@@ -32,6 +32,7 @@ class NoninstantiableMeta(type):
                 new_method = classmethod(value.im_func)
                 setattr(ret, name, new_method) # turn all methods to classmethods
         ret.__init__ = classmethod(cls._prevent_instantiating)  # You shall not pass!
+        ret.__new__ = classmethod(cls._prevent_instantiating)  # You shall not pass!
         return ret
     
 

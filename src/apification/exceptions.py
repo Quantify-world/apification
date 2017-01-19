@@ -1,14 +1,2 @@
-class ApiStructureError(Exception):
-    pass
-
-
-class NodeParamError(TypeError):
-    pass
-
-
-class InvalideParamError(NodeParamError):
-    pass
-
-
-class MissingParamError(NodeParamError):
+class ApiStructureError(Exception):  # TODO: ApiDefinitionError may be?
     pass

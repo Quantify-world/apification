@@ -13,10 +13,11 @@ class Collection(ApiBranch):
     @classmethod
     def get_collectible_class(cls):
         try:
-            collectible = tpath.parse(cls, cls.collectible)
+            collectible = tpath.parse(cls, cls.collectible)[0]
             assert issubclass(collectible, Collectible)
-        except tpath.TPathError as e:
-            raise ApiStructureError(u'Unable to find collectible on path "%s" for collection %s: %s' % (cls.collection, cls, e))
+        except (tpath.TPathError, IndexError) as e:
+            raise ApiStructureError(u'Unable to find collectible on path "%s" for collection %s: %s' % (cls.collectible, cls, e))
+        return collectible
 
     def iter_collectible_nodes(self):
         collectible_class = self.get_collectible_class()
@@ -32,6 +33,17 @@ class Collection(ApiBranch):
 
 
 class Collectible(Resource):
+    collection = '..'
+
+    @classmethod
+    def get_collection_class(cls):
+        try:
+            collection = tpath.parse(cls, cls.collection)[0]
+            assert issubclass(collection, Collection)
+        except (tpath.TPathError, IndexError) as e:
+            raise ApiStructureError(u'Unable to find collection path "%s" for collectible %s: %s' % (cls.collection, cls, e))
+        return collection
+
     @classmethod
     def get_url_argument_name(cls):
         return '%s_pk' % cls.name

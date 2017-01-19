@@ -7,16 +7,12 @@ def test_parent_class():
 
 def test_serializer_resolve():
     assert Hosts.Host.Get.serializer == HostSerializer
-    assert Hosts.Host.Like.Get.serializer == HostSerializer
-    assert Hosts.Rating.SubResource.Get.serializer == Hosts.default_serializer
+    # assert Hosts.Host.Like.Get.serializer == HostSerializer
+    # assert Hosts.Rating.SubResource.Get.serializer == Hosts.default_serializer
 
 
 def test_collectible_resolve():
     assert Hosts.get_collectible_class() == Hosts.Host
-
-
-def test_params_definition():
-    assert len(Hosts.Host.Get.get_params()) == 2
 
 
 def test_django_checks():

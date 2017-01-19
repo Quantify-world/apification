@@ -20,6 +20,7 @@ class HostCollectionSerializer(Serializer):
 
 
 class Hosts(Collection):
+    collectible = './Host'
     default_serializer = HostCollectionSerializer
 
     class Get(Action):

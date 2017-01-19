@@ -37,32 +37,31 @@ class ApiNodeMetaclass(instancevisible.Meta):
     parent_class = writeonce(None, writeonce_msg=u'Duplicate in API tree: %(instance)s already has parent %(old_value)s though %(value)s can not be set as new parent')
 
     def __new__(cls, name, parents, dct):
-        resources = []
-        serializers = []
-        actions = []
+        registries = [
+            ('resources', [], decorators.resource),
+            ('actions', [], decorators.action),
+            ('serializers', [], decorators.serializer),
+        ]
+        # collect decorated entities
         for item_name, value in dct.items():
             if hasattr(value, '_decorated'):
-                if value._decorated == decorators.resource.func_name:
-                    resources.append((item_name, value))
-                    del dct[item_name]
-                elif value._decorated == decorators.action.func_name:
-                    actions.append((item_name, value))
-                    del dct[item_name]
-                elif value._decorated == decorators.serializer.func_name:
-                    serializers.append((item_name, value))
-                    del dct[item_name]
-        resources.sort(key=lambda x: x[1]._index)
-        actions.sort(key=lambda x: x[1]._index)
-        serializers.sort(key=lambda x: x[1]._index)
-        
-        children = actions + resources
-        
+                for registry_name, registry, decorator in registries:
+                    if value._decorated == decorator.func_name:
+                        registry.append((item_name, value))
+                        del dct[item_name]
+
         ret = super(ApiNodeMetaclass, cls).__new__(cls, name, parents, dct)
-        ret.resources = OrderedDict(resources)
-        ret.actions = OrderedDict(actions)
-        ret.serializers = OrderedDict(serializers)
-        ret.children = OrderedDict(children)
-        
+
+        # create dict registries for node
+        for registry_name, registry, decorator in registries:
+            registry.sort(key=lambda x: x[1]._index)
+            setattr(ret, registry_name, OrderedDict(registry))
+
+        # Alias: children = actions + resource
+        ret.children = OrderedDict(ret.actions)
+        ret.children.update(ret.resources)
+
+        # handling of children api tree nodes
         for item_name, node_class in ret.children.iteritems():
             node_class.name = item_name
             node_class.parent_class = ret

@@ -32,7 +32,7 @@ class SerializerBail(list):
         for klass, name in mapping.iteritems():  # set real serializer to all requesting nodes
             setattr(klass, name, serializer)
 
-
+@writeonce(name=None)
 class ApiNodeMetaclass(instancevisible.Meta):
     parent_class = writeonce(None, writeonce_msg=u'Duplicate in API tree: %(instance)s already has parent %(old_value)s though %(value)s can not be set as new parent')
 
@@ -40,17 +40,17 @@ class ApiNodeMetaclass(instancevisible.Meta):
         resources = []
         serializers = []
         actions = []
-        for name, value in dct.items():
+        for item_name, value in dct.items():
             if hasattr(value, '_decorated'):
                 if value._decorated == decorators.resource.func_name:
-                    resources.append((name, value))
-                    del dct[name]
+                    resources.append((item_name, value))
+                    del dct[item_name]
                 elif value._decorated == decorators.action.func_name:
-                    actions.append((name, value))
-                    del dct[name]
+                    actions.append((item_name, value))
+                    del dct[item_name]
                 elif value._decorated == decorators.serializer.func_name:
-                    serializers.append((name, value))
-                    del dct[name]
+                    serializers.append((item_name, value))
+                    del dct[item_name]
         resources.sort(key=lambda x: x[1]._index)
         actions.sort(key=lambda x: x[1]._index)
         serializers.sort(key=lambda x: x[1]._index)
@@ -63,8 +63,8 @@ class ApiNodeMetaclass(instancevisible.Meta):
         ret.serializers = OrderedDict(serializers)
         ret.children = OrderedDict(children)
         
-        for name, node_class in ret.children.iteritems():
-            node_class.name = name
+        for item_name, node_class in ret.children.iteritems():
+            node_class.name = item_name
             node_class.parent_class = ret
 
         return ret
@@ -73,6 +73,14 @@ class ApiNodeMetaclass(instancevisible.Meta):
         super(ApiNodeMetaclass, cls).__init__(name, parents, dct)
         cls._serializers_preparations = None
         cls.prepare_serializers()
+
+    def __getattr__(cls, name):
+        if name in cls.children:
+            return cls.children[name]
+        elif name in cls.serializers:
+            return cls.serializers[name]
+        else:
+            return super(ApiNodeMetaclass, cls).__getattr__(name)
 
     @property
     def urls(cls):
@@ -114,27 +122,27 @@ class ApiNodeMetaclass(instancevisible.Meta):
 
     @instancevisible
     def get_root_class(cls):
-        seen = set()
+        seen = []
         node_class = cls
         while node_class.parent_class is not None:
             if node_class in seen:
                 raise ApiStructureError(u"API tree is not actually tree: loop found at %s" % node_class)
-            seen.add(node_class)
+            seen.append(node_class)
             node_class = node_class.parent_class
-        node_class.name = node_class.__name__  # root element has no parent, so set name here
+        if node_class.name is None:
+            node_class.name = node_class.__name__  # root element has no parent, so set name here
         return node_class
 
 
 class NoInstance(object):
     class __metaclass__(type):
-        @instancevisible
+        @instancevisible  # FIXME: not used?
         def __nonzero__(self):
             return False
 
 
 class ApiNode(object):
     __metaclass__ = ApiNodeMetaclass
-    name = None
 
     def __init__(self, request, args, kwargs, instance=NoInstance):
         self.request = request
@@ -215,9 +223,9 @@ class ApiBranch(ApiNode):
 
     @classmethod
     def iter_actions(cls):
-        for child in cls.iter_class_children():
-            if issubclass(child, ApiLeaf):
-                yield child
+        import warnings
+        warnings.warn(u'Use Node.actions instead', DeprecationWarning)
+        return cls.actions.itervalues()
 
     @classmethod
     def get_urls(cls):

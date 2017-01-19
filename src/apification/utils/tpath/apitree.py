@@ -10,7 +10,7 @@ class ApiTreeProxy(ProxyNode):
         return node.get_root_class()
 
     def iter_children(cls, context_node, node):
-        return node.iter_class_children()
+        return node.children.itervalues()
 
     def get_child(cls, context_node, node, name):
         try:

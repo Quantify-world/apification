@@ -95,23 +95,31 @@ class XPathReferrenceGenerator(object):
 
 class XPathClassTreeGenerator(XPathReferrenceGenerator):
     def get_class_tree(self):
-        from apification.nodes import ApiNode
+        from apification.resources import Resource
+        from apification import resource
 
-        class A(ApiNode):
-            class B1(ApiNode):
-                class C(ApiNode):
+        @resource
+        class A(Resource):
+            @resource
+            class B1(Resource):
+                @resource
+                class C(Resource):
                     pass
-            class B2(ApiNode):
-                class C(ApiNode):
-                    class D(ApiNode):
-                        class A(ApiNode):
+            @resource
+            class B2(Resource):
+                @resource
+                class C(Resource):
+                    @resource
+                    class D(Resource):
+                        @resource
+                        class A(Resource):
                             pass
         return A
 
     def get_tree(self):
         def create_nodes(node, xml_node):
-            for subnode in node.iter_class_children():
-                xml_subnode = etree.SubElement(xml_node, subnode.name)
+            for name, subnode in node.children.iteritems():
+                xml_subnode = etree.SubElement(xml_node, name)
                 create_nodes(subnode, xml_subnode)
 
         root = self.get_class_tree()

@@ -2,6 +2,7 @@ from django.test import TestCase, override_settings
 from django.core.urlresolvers import reverse
 from django.conf.urls import url, include
 
+from apification import resource, action, serializer
 from apification.actions import Action
 from apification.resource_collections import Collection, Collectible
 from apification.serializers import Serializer
@@ -20,17 +21,19 @@ class HostCollectionSerializer(Serializer):
 
 class Hosts2(Collection):
     collectible = './Host'
-    default_serializer = HostCollectionSerializer
+    default_serializer = serializer(HostCollectionSerializer)
     
     def get_queryset(self):
         return []
 
+    @action
     class Get(Action):
         pass
 
+    @resource
     class Host(Collectible):
         model = Host
-        deffault_serializer = HostSerializer
+        default_serializer = serializer(HostSerializer)
 
 
 class TestURLConf(object):

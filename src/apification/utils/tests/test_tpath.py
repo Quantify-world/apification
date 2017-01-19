@@ -7,7 +7,7 @@ class TPathGenerator(XPathClassTreeGenerator):
 
     def get_initial_node(self):
         root = self.get_tree()
-        return root.B2
+        return root.children['B2']
 
     def get_tree(self):
         return self.get_class_tree()

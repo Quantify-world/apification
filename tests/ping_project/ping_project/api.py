@@ -33,6 +33,7 @@ class Hosts(Collection):
     class Host(Collectible):
         default_serializer = HostSerializer
 
+        @action
         class Get(Action):
             method = 'GET'
 

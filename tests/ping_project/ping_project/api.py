@@ -19,13 +19,16 @@ class HostCollectionSerializer(Serializer):
     )
 
 
+@resource
 class Hosts(Collection):
     collectible = './Host'
     default_serializer = HostCollectionSerializer
 
+    @action
     class Get(Action):
         pass
 
+    @resource
     class Host(Collectible):
         default_serializer = HostSerializer
 

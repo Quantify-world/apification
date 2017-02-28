@@ -1,0 +1,31 @@
+HTTP request
+    |
+    | Framework-issued request
+    v
+Parser
+( Format ParserBackend )
+( Framework-related ParserBackend )  ---+
+    |                                   |
+    | Blue Data                         | Request args
+    v                                   v
+Deserializer                Node instantiation via request
+( Fields )                              |
+    |                                   |
+    | Node Instance                     | Node Instance
+    v                                   |
+Action Processing  <--------------------+
+    |
+    | Node Instance
+    v
+Serializer
+( RepresentationBackend )
+    |
+    | Blue Data
+    v
+Renderer
+( Format RendererBackend )
+( Framework-related RendererBackend )
+    |
+    | Framework-accepted response
+    v
+HTTP response

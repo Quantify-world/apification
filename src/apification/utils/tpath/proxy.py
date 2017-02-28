@@ -3,6 +3,21 @@ import itertools
 from apification.utils.noninstantiable import NoninstantiableMeta, Noninstantiable
 
 
+class BaseType(object):
+    __slots__ = ['item', 'parent']
+
+    def get_name():
+        pass  # TODO....
+
+
+class NodeType(BaseType):
+    pass
+
+
+class SerializerType(BaseType):
+    pass
+
+
 class VirtualRoot(object):
     class __metaclass__(NoninstantiableMeta):
         def __str__(cls):
@@ -30,7 +45,7 @@ class ProxyNode(Noninstantiable):
         return itertools.chain([node], *sub)
 
 
-class RootableProxyMixin(ProxyNode):
+class RootableProxyMixin(ProxyNode):  # FIXME: !!!
     """
     Intended to be used as parent class in dynamic inheritance for virtual root class.
     """

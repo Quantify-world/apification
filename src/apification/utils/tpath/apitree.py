@@ -30,7 +30,7 @@ class TPathApiTreeParser(TPathParser):
 
 @TPathApiTreeParser.lexem
 class SerializerName(BaseLexem):
-    pattern = r'@[a-zA-Z_][a-zA-Z_0-9.]*'
+    pattern = r'#[a-zA-Z_][a-zA-Z_0-9.]*'
 
     def __repr__(self):
         return u'<serializer name(%s)>' % self.token[1:]

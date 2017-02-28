@@ -14,7 +14,8 @@ class HostSerializer(Serializer):
 
 class HostCollectionSerializer(Serializer):
     results = List(
-        node_path='./Host',
+        # node_path='./Host/#default_serializer',
+        node_path='./Host/serializer::default_serializer',
         serializer_name='default_serializer',
         generation_method_name='iter_collectible_nodes',
     )
